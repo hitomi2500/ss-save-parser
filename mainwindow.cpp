@@ -2,6 +2,7 @@
 #include <QMessageBox>
 #include <QDate>
 #include <QTextCodec>
+#include <QTableWidget>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "parselib.h"
@@ -13,28 +14,28 @@ QByteArray HugeRAM;//full size buffer
 
 QList<SaveType> SavesList;
 QStringList sList;
+int iSortIndex = 0;
+bool bSortInvert = false;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    ui->menuBar->hide();
-    ui->centralWidget->setWindowIcon(QIcon());
     TheConfig = new Config;
     SetupWin = new SetupWindow(this);
-    ui->tableWidget->setColumnCount(8);
+    ui->tableWidget->setColumnCount(9);
     ui->tableWidget->setRowCount(0);
     sList.append("Name");
     sList.append("Comment");
     sList.append("Lng. code");
     sList.append("Date");
     sList.append("Bytes");
+    sList.append("Bytes(Hex)");
     sList.append("Blocks");
     sList.append("Clusters");
     sList.append("Counter");
     ui->tableWidget->setHorizontalHeaderLabels(sList);
-    //ui->tableWidget->verticalHeader()->hide();
     ui->tableWidget->resizeColumnsToContents();
     ui->tableWidget->resizeRowsToContents();
     ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -50,6 +51,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->DeleteButton->setEnabled(false);
     //ui->SetupButton->setEnabled(false);
     //this->setWindowIcon(QIcon(QPixmap(masqurin_highwizard_xpm)));
+    connect(this->ui->tableWidget->horizontalHeader(),
+            SIGNAL(sectionClicked(int)),
+            this,
+            SLOT(on_Sort_Order_Changed(int))
+            );
+
+
 }
 
 MainWindow::~MainWindow()
@@ -68,49 +76,137 @@ void MainWindow::on_SetupButton_clicked()
 
 void MainWindow::ParseHugeRAM()
 {
+    SaveType tmpSave;
+    int i;
     TheConfig->LoadFromRegistry();
     //now parse file content and update the game list
     SavesList.clear();
-    ui->tableWidget->clear();
-    ui->tableWidget->setRowCount(0);
-    ui->tableWidget->setHorizontalHeaderLabels(sList);
-    //scan each cluster for header
-    for (int i=0; i< ((TheConfig->m_iFileSize)/TheConfig->m_iClusterSize); i++)
+    //scan each cluster for header and fill data
+    for (i=0; i< ((TheConfig->m_iFileSize)/TheConfig->m_iClusterSize); i++)
     {
-        SaveType tmpSave;
         if (ParseHeader(HugeRAM.mid(i*TheConfig->m_iClusterSize,34),&tmpSave) == ParseOk)
         {
             ParseSAT(HugeRAM.mid(i*TheConfig->m_iClusterSize+34,8192),&tmpSave,TheConfig->m_iClusterSize);
             tmpSave.iStartCluster=i;
             SavesList.append(tmpSave);
-            ui->tableWidget->setRowCount(ui->tableWidget->rowCount()+1);
-            QTextCodec *codec = QTextCodec::codecForName("Shift-JIS");
-            //replace 0x00 with space
-            QTableWidgetItem *newItem1 = new QTableWidgetItem(codec->toUnicode(tmpSave.Name.replace((char)0,(char)32)));
-            QTableWidgetItem *newItem2 = new QTableWidgetItem(codec->toUnicode(tmpSave.Comment.replace((char)0,(char)32)));
-            QTableWidgetItem *newItem3 = new QTableWidgetItem(QString("%1").arg(tmpSave.iLanguageCode));
-            QTableWidgetItem *newItem4 = new QTableWidgetItem(tmpSave.DateTime.toString("dd-MM-yyyy hh:mm"));
-            QTableWidgetItem *newItem5 = new QTableWidgetItem(QString("%1").arg(tmpSave.iBytes));
-            QTableWidgetItem *newItem6 = new QTableWidgetItem(QString("%1").arg(tmpSave.iBlocks));
-            QTableWidgetItem *newItem7;
-            if (tmpSave.iSATSize > 1)
-                newItem7 = new QTableWidgetItem(QString("%1(%2...%3)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster).arg(tmpSave.SAT[tmpSave.iSATSize-2]));
-            else
-                newItem7 = new QTableWidgetItem(QString("%1(%2)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster));
-            QTableWidgetItem *newItem8 = new QTableWidgetItem(QString("%1").arg((int)tmpSave.cCounter));
-            ui->tableWidget->setItem(SavesList.size()-1,0,newItem1);
-            ui->tableWidget->setItem(SavesList.size()-1,1,newItem2);
-            ui->tableWidget->setItem(SavesList.size()-1,2,newItem3);
-            ui->tableWidget->setItem(SavesList.size()-1,3,newItem4);
-            ui->tableWidget->setItem(SavesList.size()-1,4,newItem5);
-            ui->tableWidget->setItem(SavesList.size()-1,5,newItem6);
-            ui->tableWidget->setItem(SavesList.size()-1,6,newItem7);
-            ui->tableWidget->setItem(SavesList.size()-1,7,newItem8);
-            ui->tableWidget->resizeColumnsToContents();
-            ui->tableWidget->resizeRowsToContents();
         }
     }
-    if (ui->tableWidget->rowCount()>0) //if the table is not empty
+    //slow sort list by name
+    //this sort is horrible , replace it by something more sane later!
+    for (int i=0; i<SavesList.size(); i++)
+        for (int j=i; j<SavesList.size(); j++)
+        {
+            if (bSortInvert)
+            {//inverted sort
+                switch (iSortIndex)
+                {
+                case 0:
+                    if (SavesList.at(i).Name < SavesList.at(j).Name ) SavesList.swap(i,j);
+                    break;
+                case 1:
+                    if (SavesList.at(i).Comment < SavesList.at(j).Comment ) SavesList.swap(i,j);
+                    break;
+                case 2:
+                    if (SavesList.at(i).iLanguageCode < SavesList.at(j).iLanguageCode ) SavesList.swap(i,j);
+                    break;
+                case 3:
+                    if (SavesList.at(i).DateTime < SavesList.at(j).DateTime ) SavesList.swap(i,j);
+                    break;
+                case 4:
+                case 5:
+                    if (SavesList.at(i).iBytes < SavesList.at(j).iBytes ) SavesList.swap(i,j);
+                    break;
+                case 6:
+                    if (SavesList.at(i).iBlocks < SavesList.at(j).iBlocks ) SavesList.swap(i,j);
+                    break;
+                case 7:
+                    if (SavesList.at(i).iSATSize < SavesList.at(j).iSATSize ) SavesList.swap(i,j);
+                    break;
+                case 8:
+                    if (SavesList.at(i).cCounter < SavesList.at(j).cCounter ) SavesList.swap(i,j);
+                    break;
+                }
+            }
+            else
+            {//normal sort
+                switch (iSortIndex)
+                {
+                case 0:
+                    if (SavesList.at(i).Name > SavesList.at(j).Name ) SavesList.swap(i,j);
+                    break;
+                case 1:
+                    if (SavesList.at(i).Comment > SavesList.at(j).Comment ) SavesList.swap(i,j);
+                    break;
+                case 2:
+                    if (SavesList.at(i).iLanguageCode > SavesList.at(j).iLanguageCode ) SavesList.swap(i,j);
+                    break;
+                case 3:
+                    if (SavesList.at(i).DateTime > SavesList.at(j).DateTime ) SavesList.swap(i,j);
+                    break;
+                case 4:
+                case 5:
+                    if (SavesList.at(i).iBytes > SavesList.at(j).iBytes ) SavesList.swap(i,j);
+                    break;
+                case 6:
+                    if (SavesList.at(i).iBlocks > SavesList.at(j).iBlocks ) SavesList.swap(i,j);
+                    break;
+                case 7:
+                    if (SavesList.at(i).iSATSize > SavesList.at(j).iSATSize ) SavesList.swap(i,j);
+                    break;
+                case 8:
+                    if (SavesList.at(i).cCounter > SavesList.at(j).cCounter ) SavesList.swap(i,j);
+                    break;
+                }
+            }
+
+        }
+
+    //display list
+    ui->tableWidget->clear();
+    ui->tableWidget->setRowCount(0);
+    ui->tableWidget->setHorizontalHeaderLabels(sList);
+    QTextCodec *codec = QTextCodec::codecForName("Shift-JIS");
+    QTableWidgetItem *newItem1;
+    QTableWidgetItem *newItem2;
+    QTableWidgetItem *newItem3;
+    QTableWidgetItem *newItem4;
+    QTableWidgetItem *newItem5;
+    QTableWidgetItem *newItem6;
+    QTableWidgetItem *newItem7;
+    QTableWidgetItem *newItem8;
+    QTableWidgetItem *newItem9;
+    for (i=0; i<SavesList.size(); i++)
+    {
+        tmpSave = SavesList.at(i);
+        ui->tableWidget->insertRow(i);
+        //ui->tableWidget->setRowCount(ui->tableWidget->rowCount()+1);
+        //replace 0x00 with space
+        newItem1 = new QTableWidgetItem(codec->toUnicode(tmpSave.Name.replace((char)0,(char)32)));
+        newItem2 = new QTableWidgetItem(codec->toUnicode(tmpSave.Comment.replace((char)0,(char)32)));
+        newItem3 = new QTableWidgetItem(QString("%1").arg(tmpSave.iLanguageCode));
+        newItem4 = new QTableWidgetItem(tmpSave.DateTime.toString("dd-MM-yyyy hh:mm"));
+        newItem5 = new QTableWidgetItem(QString("%1").arg(tmpSave.iBytes));
+        newItem6 = new QTableWidgetItem(QString("0x%1").arg(QString("%1").arg(tmpSave.iBytes,0,16,QLatin1Char(' ')).toUpper()));
+        newItem7 = new QTableWidgetItem(QString("%1").arg(tmpSave.iBlocks));
+        if (tmpSave.iSATSize > 1)
+            newItem8 = new QTableWidgetItem(QString("%1(%2...%3)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster).arg(tmpSave.SAT[tmpSave.iSATSize-2]));
+        else
+            newItem8 = new QTableWidgetItem(QString("%1(%2)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster));
+        newItem9 = new QTableWidgetItem(QString("%1").arg((int)tmpSave.cCounter));
+        ui->tableWidget->setItem(i,0,newItem1);
+        ui->tableWidget->setItem(i,1,newItem2);
+        ui->tableWidget->setItem(i,2,newItem3);
+        ui->tableWidget->setItem(i,3,newItem4);
+        ui->tableWidget->setItem(i,4,newItem5);
+        ui->tableWidget->setItem(i,5,newItem6);
+        ui->tableWidget->setItem(i,6,newItem7);
+        ui->tableWidget->setItem(i,7,newItem8);
+        ui->tableWidget->setItem(i,8,newItem9);
+    }
+    ui->tableWidget->resizeColumnsToContents();
+    ui->tableWidget->resizeRowsToContents();
+
+    if (SavesList.size()>0) //if the table is not empty
     {
         ui->tableWidget->selectRow(0);
         ui->SaveButton->setEnabled(true);//enable save
@@ -991,6 +1087,7 @@ void MainWindow::on_DeleteButton_clicked()
     {
         QMessageBox msgBox;
         msgBox.setText(QString("Excuse me, but we have nothing to delete."));
+        msgBox.exec();
         return;
     }
     tmpSave = SavesList.at(ui->tableWidget->currentRow());
@@ -1015,3 +1112,11 @@ void MainWindow::on_DeleteButton_clicked()
     ui->statusBar->showMessage(QString("Save deleted"));
 }
 
+void MainWindow::on_Sort_Order_Changed(int logicalIndex)
+{
+    if (iSortIndex == logicalIndex)
+        bSortInvert = not bSortInvert;
+    else bSortInvert = false;
+    iSortIndex = logicalIndex;
+    ParseHugeRAM();
+}

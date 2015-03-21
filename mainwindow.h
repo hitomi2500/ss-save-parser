@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QDate>
+#include <QTableWidget>
 #include "setupwindow.h"
 #include "config.h"
 
@@ -43,6 +44,9 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+public slots:
+    void on_Sort_Order_Changed(int logicalIndex);
+
 private slots:
     void on_SetupButton_clicked();
 
@@ -57,7 +61,6 @@ private slots:
     void on_LoadButton_clicked();
 
     void on_SaveButton_clicked();
-
 
 private:
     Ui::MainWindow *ui;
