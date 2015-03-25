@@ -30,6 +30,7 @@ SetupWindow::~SetupWindow()
 void SetupWindow::on_SetupWindow_accepted()
 {
     SetupConfig->SaveToRegistry();
+    emit this->SetupAccepted();
 }
 
 void SetupWindow::UpdateFromConfig()
@@ -265,6 +266,8 @@ void SetupWindow::UpdateFromConfig()
             break;
     }
 
+    ui->checkBox_ShowHex->setChecked(SetupConfig->m_bShowHexValues);
+
 }
 
 void SetupWindow::on_comboBox_9_currentIndexChanged(int index)
@@ -421,4 +424,9 @@ void SetupWindow::on_checkBox_32_toggled(bool checked)
 void SetupWindow::on_checkBox_34_toggled(bool checked)
 {
     SetupConfig->m_bInsertSysAll = checked;
+}
+
+void SetupWindow::on_checkBox_ShowHex_toggled(bool checked)
+{
+    SetupConfig->m_bShowHexValues = checked;
 }

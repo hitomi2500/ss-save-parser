@@ -17,6 +17,9 @@ public:
     ~SetupWindow();
     void UpdateFromConfig();
 
+signals:
+    SetupAccepted();
+
 private slots:
     void on_SetupWindow_accepted();
 
@@ -65,6 +68,8 @@ private slots:
     void on_checkBox_32_toggled(bool checked);
 
     void on_checkBox_34_toggled(bool checked);
+
+    void on_checkBox_ShowHex_toggled(bool checked);
 
 private:
     Ui::SetupWindow *ui;

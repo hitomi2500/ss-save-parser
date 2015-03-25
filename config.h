@@ -3,9 +3,6 @@
 
 #include <QSettings>
 
-//enum LoadMode {LoadAuto,Load1M,Load512K};
-//enum SaveMode {SaveAsLoad,Save1M,Save512K};
-//enum LoadClusterSize {ClusterAuto,Cluster256,Cluster512};
 enum ExtractMode {ExtractSSF,ExtractAR,ExtractFull,ExtractRaw,ExtractManual};
 enum InsertMode {InsertSSF,InsertAR,InsertFull,InsertRaw,InsertManual};
 enum DeleteMode {DeleteSingleSys,DeleteAllSys,DeleteFull};
@@ -45,6 +42,7 @@ public:
     bool m_bInsertSize;
     bool m_bInsertSAT;
     DeleteMode m_DeleteMode;
+    bool m_bShowHexValues;
 };
 
 #endif // CONFIG_H

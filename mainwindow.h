@@ -9,6 +9,7 @@
 
 enum FileIOMode {SH2_IO_MODE,RAW_IO_MODE};
 enum FileIOClusterSize {CLUSTER_512,CLUSTER_256,CLUSTER_64,CLUSTER_CUSTOM};
+enum SortDiretion {SORT_ASCENDING,SORT_DESCENDING,SORT_NONE};
 
 typedef struct MyIOSettings{
     FileIOMode IOMode;
@@ -46,6 +47,8 @@ public:
 
 public slots:
     void on_Sort_Order_Changed(int logicalIndex);
+
+    void on_Setup_Accepted();
 
 private slots:
     void on_SetupButton_clicked();

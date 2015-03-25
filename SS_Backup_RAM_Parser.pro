@@ -34,5 +34,7 @@ FORMS    += mainwindow.ui \
     entersavedetailsdialog.ui \
     fileiosettingsdialog.ui
 
-DISTFILES += \
-    masqurin_highwizard.xpm
+DISTFILES +=
+
+RESOURCES += \
+    resources.qrc

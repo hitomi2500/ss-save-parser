@@ -8,14 +8,13 @@
 #include "parselib.h"
 #include "entersavedetailsdialog.h"
 #include "fileiosettingsdialog.h"
-//#include "masqurin_highwizard.xpm"
 
 QByteArray HugeRAM;//full size buffer
 
 QList<SaveType> SavesList;
 QStringList sList;
 int iSortIndex = 0;
-bool bSortInvert = false;
+SortDiretion SortDir = SORT_NONE;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -24,14 +23,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     TheConfig = new Config;
     SetupWin = new SetupWindow(this);
-    ui->tableWidget->setColumnCount(9);
+    ui->tableWidget->setColumnCount(8);
     ui->tableWidget->setRowCount(0);
     sList.append("Name");
     sList.append("Comment");
     sList.append("Lng. code");
     sList.append("Date");
     sList.append("Bytes");
-    sList.append("Bytes(Hex)");
     sList.append("Blocks");
     sList.append("Clusters");
     sList.append("Counter");
@@ -50,12 +48,15 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->EditButton->setEnabled(false);
     ui->DeleteButton->setEnabled(false);
     //ui->SetupButton->setEnabled(false);
-    //this->setWindowIcon(QIcon(QPixmap(masqurin_highwizard_xpm)));
+    this->setWindowIcon(QIcon(QPixmap(QString(":/images/masqurin_highwizard.xpm"),0,Qt::AutoColor)));
     connect(this->ui->tableWidget->horizontalHeader(),
             SIGNAL(sectionClicked(int)),
             this,
-            SLOT(on_Sort_Order_Changed(int))
-            );
+            SLOT(on_Sort_Order_Changed(int)));
+    connect(this->SetupWin,
+            SIGNAL(SetupAccepted()),
+            this,
+            SLOT(on_Setup_Accepted()));
 
 
 }
@@ -77,7 +78,7 @@ void MainWindow::on_SetupButton_clicked()
 void MainWindow::ParseHugeRAM()
 {
     SaveType tmpSave;
-    int i;
+    int i,j;
     TheConfig->LoadFromRegistry();
     //now parse file content and update the game list
     SavesList.clear();
@@ -91,12 +92,35 @@ void MainWindow::ParseHugeRAM()
             SavesList.append(tmpSave);
         }
     }
+    //update header lables according to sort order
+    sList.clear();
+    sList.append("Name");
+    sList.append("Comment");
+    sList.append("Lng. code");
+    sList.append("Date");
+    sList.append("Bytes");
+    sList.append("Blocks");
+    sList.append("Clusters");
+    sList.append("Counter");
+
+    if (SortDir == SORT_ASCENDING)
+    {
+        sList[iSortIndex].append(QChar::Space);
+        sList[iSortIndex].append(QChar(0x2191));//arrow up
+    }
+    if (SortDir == SORT_DESCENDING)
+    {
+        sList[iSortIndex].append(QChar::Space);
+        sList[iSortIndex].append(QChar(0x2193));//arrow down
+    }
+    ui->tableWidget->setHorizontalHeaderLabels(sList);
+
     //slow sort list by name
     //this sort is horrible , replace it by something more sane later!
     for (int i=0; i<SavesList.size(); i++)
         for (int j=i; j<SavesList.size(); j++)
         {
-            if (bSortInvert)
+            if (SortDir == SORT_DESCENDING)
             {//inverted sort
                 switch (iSortIndex)
                 {
@@ -113,21 +137,20 @@ void MainWindow::ParseHugeRAM()
                     if (SavesList.at(i).DateTime < SavesList.at(j).DateTime ) SavesList.swap(i,j);
                     break;
                 case 4:
-                case 5:
                     if (SavesList.at(i).iBytes < SavesList.at(j).iBytes ) SavesList.swap(i,j);
                     break;
-                case 6:
+                case 5:
                     if (SavesList.at(i).iBlocks < SavesList.at(j).iBlocks ) SavesList.swap(i,j);
                     break;
-                case 7:
+                case 6:
                     if (SavesList.at(i).iSATSize < SavesList.at(j).iSATSize ) SavesList.swap(i,j);
                     break;
-                case 8:
+                case 7:
                     if (SavesList.at(i).cCounter < SavesList.at(j).cCounter ) SavesList.swap(i,j);
                     break;
                 }
             }
-            else
+            else if (SortDir==SORT_ASCENDING)
             {//normal sort
                 switch (iSortIndex)
                 {
@@ -144,16 +167,15 @@ void MainWindow::ParseHugeRAM()
                     if (SavesList.at(i).DateTime > SavesList.at(j).DateTime ) SavesList.swap(i,j);
                     break;
                 case 4:
-                case 5:
                     if (SavesList.at(i).iBytes > SavesList.at(j).iBytes ) SavesList.swap(i,j);
                     break;
-                case 6:
+                case 5:
                     if (SavesList.at(i).iBlocks > SavesList.at(j).iBlocks ) SavesList.swap(i,j);
                     break;
-                case 7:
+                case 6:
                     if (SavesList.at(i).iSATSize > SavesList.at(j).iSATSize ) SavesList.swap(i,j);
                     break;
-                case 8:
+                case 7:
                     if (SavesList.at(i).cCounter > SavesList.at(j).cCounter ) SavesList.swap(i,j);
                     break;
                 }
@@ -166,42 +188,50 @@ void MainWindow::ParseHugeRAM()
     ui->tableWidget->setRowCount(0);
     ui->tableWidget->setHorizontalHeaderLabels(sList);
     QTextCodec *codec = QTextCodec::codecForName("Shift-JIS");
-    QTableWidgetItem *newItem1;
-    QTableWidgetItem *newItem2;
+    QTableWidgetItem *newItem;//1;
+    /*QTableWidgetItem *newItem2;
     QTableWidgetItem *newItem3;
     QTableWidgetItem *newItem4;
     QTableWidgetItem *newItem5;
     QTableWidgetItem *newItem6;
     QTableWidgetItem *newItem7;
-    QTableWidgetItem *newItem8;
-    QTableWidgetItem *newItem9;
+    QTableWidgetItem *newItem8;*/
+    QString Items[8];
     for (i=0; i<SavesList.size(); i++)
     {
         tmpSave = SavesList.at(i);
         ui->tableWidget->insertRow(i);
-        //ui->tableWidget->setRowCount(ui->tableWidget->rowCount()+1);
-        //replace 0x00 with space
-        newItem1 = new QTableWidgetItem(codec->toUnicode(tmpSave.Name.replace((char)0,(char)32)));
-        newItem2 = new QTableWidgetItem(codec->toUnicode(tmpSave.Comment.replace((char)0,(char)32)));
-        newItem3 = new QTableWidgetItem(QString("%1").arg(tmpSave.iLanguageCode));
-        newItem4 = new QTableWidgetItem(tmpSave.DateTime.toString("dd-MM-yyyy hh:mm"));
-        newItem5 = new QTableWidgetItem(QString("%1").arg(tmpSave.iBytes));
-        newItem6 = new QTableWidgetItem(QString("0x%1").arg(QString("%1").arg(tmpSave.iBytes,0,16,QLatin1Char(' ')).toUpper()));
-        newItem7 = new QTableWidgetItem(QString("%1").arg(tmpSave.iBlocks));
+        Items[0] = codec->toUnicode(tmpSave.Name.replace((char)0,(char)32));
+        Items[1] = codec->toUnicode(tmpSave.Comment.replace((char)0,(char)32));
+        Items[2] = QString("%1").arg(tmpSave.iLanguageCode);
+        Items[3] = tmpSave.DateTime.toString("dd-MM-yyyy hh:mm");
+        Items[4] = QString("%1").arg(tmpSave.iBytes);
+        Items[5] = QString("%1").arg(tmpSave.iBlocks);
         if (tmpSave.iSATSize > 1)
-            newItem8 = new QTableWidgetItem(QString("%1(%2...%3)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster).arg(tmpSave.SAT[tmpSave.iSATSize-2]));
+            Items[6] = QString("%1(%2...%3)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster).arg(tmpSave.SAT[tmpSave.iSATSize-2]);
         else
-            newItem8 = new QTableWidgetItem(QString("%1(%2)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster));
-        newItem9 = new QTableWidgetItem(QString("%1").arg((int)tmpSave.cCounter));
-        ui->tableWidget->setItem(i,0,newItem1);
-        ui->tableWidget->setItem(i,1,newItem2);
-        ui->tableWidget->setItem(i,2,newItem3);
-        ui->tableWidget->setItem(i,3,newItem4);
-        ui->tableWidget->setItem(i,4,newItem5);
-        ui->tableWidget->setItem(i,5,newItem6);
-        ui->tableWidget->setItem(i,6,newItem7);
-        ui->tableWidget->setItem(i,7,newItem8);
-        ui->tableWidget->setItem(i,8,newItem9);
+            Items[6] = QString("%1(%2)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster);
+        Items[7] = QString("%1").arg((int)tmpSave.cCounter);
+        if (TheConfig->m_bShowHexValues)
+        {
+            //add hexes
+            for (j=0;j<8;j++) Items[j].append(QChar::CarriageReturn);
+            for (j=0;j<8;j++) Items[j].append(QChar::LineFeed);
+            for (j=0;j<11;j++) Items[0].append(QString("%1 ").arg((unsigned char)tmpSave.Name[j],2,16,QChar('0')).toUpper());
+            for (j=0;j<10;j++) Items[1].append(QString("%1 ").arg((unsigned char)tmpSave.Comment[j],2,16,QChar('0')).toUpper());
+            Items[2].append(QString("%1 ").arg((unsigned char)tmpSave.iLanguageCode,2,16,QChar('0')).toUpper());
+            for (j=0;j<4;j++) Items[3].append(QString("%1 ").arg((unsigned char)tmpSave.DateTimeRaw[j],2,16,QChar('0')).toUpper());
+            Items[4].append(QString("%1 ").arg((unsigned char)tmpSave.iBytes/0x1000000,2,16,QChar('0')).toUpper());
+            Items[4].append(QString("%1 ").arg((unsigned char)(tmpSave.iBytes/0x10000)%0x100,2,16,QChar('0')).toUpper());
+            Items[4].append(QString("%1 ").arg((unsigned char)(tmpSave.iBytes/0x100)%0x100,2,16,QChar('0')).toUpper());
+            Items[4].append(QString("%1 ").arg((unsigned char)tmpSave.iBytes%0x100,2,16,QChar('0')).toUpper());
+            Items[7].append(QString("%1 ").arg((unsigned char)tmpSave.cCounter,2,16,QChar('0')).toUpper());
+        }
+        for (j=0;j<8;j++)
+        {
+            newItem = new QTableWidgetItem(Items[j]);
+            ui->tableWidget->setItem(i,j,newItem);
+        }
     }
     ui->tableWidget->resizeColumnsToContents();
     ui->tableWidget->resizeRowsToContents();
@@ -352,6 +382,10 @@ void MainWindow::on_LoadButton_clicked()
     }
     ui->statusBar->showMessage(QString("File loaded, size %1, cluster size is %2 bytes.").arg(TheConfig->m_iFileSize).arg(TheConfig->m_iClusterSize));
     file_in.close();
+    //enable name sorting
+    iSortIndex = 0;
+    SortDir = SORT_ASCENDING;
+    //parse
     ParseHugeRAM();
 }
 
@@ -776,7 +810,9 @@ void MainWindow::on_InsertButton_clicked()
     //file opened, move on
 
     //check if we have enough space at the end of file
-    int iLastUsedCluster=0;
+    //we don't insert at 0th or 1st cluster - it's signature and always zero
+    //so starting with 2
+    int iLastUsedCluster=2;
     for (int i=0; i<SavesList.size(); i++)
     {
         for (int j=0; j<SavesList.at(i).iSATSize;j++)
@@ -1115,8 +1151,26 @@ void MainWindow::on_DeleteButton_clicked()
 void MainWindow::on_Sort_Order_Changed(int logicalIndex)
 {
     if (iSortIndex == logicalIndex)
-        bSortInvert = not bSortInvert;
-    else bSortInvert = false;
+    {
+        switch (SortDir)
+        {
+        case SORT_ASCENDING:
+            SortDir = SORT_DESCENDING;
+            break;
+        case SORT_DESCENDING:
+            SortDir = SORT_NONE;
+            break;
+        case SORT_NONE:
+            SortDir = SORT_ASCENDING;
+            break;
+        }
+    }
+    else SortDir = SORT_ASCENDING;
     iSortIndex = logicalIndex;
+    ParseHugeRAM();
+}
+
+void MainWindow::on_Setup_Accepted()
+{
     ParseHugeRAM();
 }

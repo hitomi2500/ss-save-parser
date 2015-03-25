@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/images">
+        <file>masqurin_highwizard.xpm</file>
+    </qresource>
+</RCC>

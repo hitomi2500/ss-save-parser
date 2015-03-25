@@ -3,12 +3,10 @@
 Config::Config()
 {
     TheSettings = new QSettings("Null Record Studio","Sega Saturn Backup RAM Parser");
-    //LoadFromRegistry();
 }
 
 Config::~Config()
 {
-    //SaveToRegistry();
     delete TheSettings;
 }
 
@@ -141,6 +139,7 @@ void Config::SaveToRegistry()
     TheSettings->setValue("Insert SAT",m_bInsertSAT);
     TheSettings->setValue("Insert Language",m_bInsertLanguage);
     TheSettings->setValue("Delete Mode",(int)m_DeleteMode);
+    TheSettings->setValue("Show Hex Values",m_bShowHexValues);
     TheSettings->sync();
 }
 
@@ -170,5 +169,6 @@ void Config::LoadFromRegistry()
     m_bInsertSAT = (bool)TheSettings->value("Insert SAT").toBool();
     m_bInsertLanguage = (bool)TheSettings->value("Insert Language").toBool();
     m_DeleteMode = (DeleteMode)TheSettings->value("Delete Mode").toInt();
+    m_bShowHexValues = (bool)TheSettings->value("Show Hex Values").toBool();
     UpdateFlags();
 }
