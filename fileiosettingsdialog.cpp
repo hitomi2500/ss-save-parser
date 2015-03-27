@@ -58,6 +58,7 @@ FileIOSettingsDialog::FileIOSettingsDialog(FileIOSettingsType *settings, QWidget
         ui->label_3->setDisabled(true);
         ui->CustomClusterSizeSpinBox->setDisabled(true);
     }
+    this->setWindowTitle(this->windowTitle().append(" ").append(APP_VERSION));
 }
 
 FileIOSettingsDialog::~FileIOSettingsDialog()

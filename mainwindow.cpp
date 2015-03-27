@@ -8,6 +8,7 @@
 #include "parselib.h"
 #include "entersavedetailsdialog.h"
 #include "fileiosettingsdialog.h"
+#include "newdialog.h"
 
 QByteArray HugeRAM;//full size buffer
 
@@ -48,17 +49,32 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->EditButton->setEnabled(false);
     ui->DeleteButton->setEnabled(false);
     //ui->SetupButton->setEnabled(false);
+    ui->ImageSizeLcdNumber->setDigitCount(8);
+    ui->ImageSizeLcdNumber->setPalette(QPalette(Qt::black));
+    ui->ImageSizeLcdNumber->setFrameStyle(QFrame::NoFrame);
+    ui->ClusterSizeLcdNumber->setDigitCount(4);
+    ui->ClusterSizeLcdNumber->setPalette(QPalette(Qt::black));
+    ui->ClusterSizeLcdNumber->setFrameStyle(QFrame::NoFrame);
     this->setWindowIcon(QIcon(QPixmap(QString(":/images/masqurin_highwizard.xpm"),0,Qt::AutoColor)));
-    connect(this->ui->tableWidget->horizontalHeader(),
+    this->setWindowTitle(this->windowTitle().append(" ").append(APP_VERSION));
+    connect(ui->tableWidget->horizontalHeader(),
             SIGNAL(sectionClicked(int)),
             this,
             SLOT(on_Sort_Order_Changed(int)));
-    connect(this->SetupWin,
-            SIGNAL(SetupAccepted()),
+    connect(SetupWin,
+            SIGNAL(accepted()),
             this,
             SLOT(on_Setup_Accepted()));
-
-
+    //allocating new saveram
+    TheConfig->LoadFromRegistry();
+    TheConfig->m_iClusterSize=512;//default
+    TheConfig->m_iFileSize=512*1024;//default
+    SavesList.clear();
+    HugeRAM.clear();
+    HugeRAM.fill((char)0,TheConfig->m_iFileSize);
+    for (int i=0;i<TheConfig->m_iClusterSize/16;i++)
+        HugeRAM.replace(16*i,16,QByteArray("BackUpRam Format"));
+    ParseHugeRAM();//updating
 }
 
 MainWindow::~MainWindow()
@@ -79,6 +95,7 @@ void MainWindow::ParseHugeRAM()
 {
     SaveType tmpSave;
     int i,j;
+    int iUsedClusters;
     TheConfig->LoadFromRegistry();
     //now parse file content and update the game list
     SavesList.clear();
@@ -182,20 +199,22 @@ void MainWindow::ParseHugeRAM()
             }
 
         }
-
+    //calculate and display used size in %
+    iUsedClusters=0;
+    for (i=0; i<SavesList.size(); i++)
+    {
+        iUsedClusters+=SavesList.at(i).iSATSize;
+    }
+    ui->ImageFillProgressBar->setValue((100*iUsedClusters*TheConfig->m_iClusterSize)/TheConfig->m_iFileSize);
+    //display image size and cluster size
+    ui->ImageSizeLcdNumber->display(TheConfig->m_iFileSize);
+    ui->ClusterSizeLcdNumber->display(TheConfig->m_iClusterSize);
     //display list
     ui->tableWidget->clear();
     ui->tableWidget->setRowCount(0);
     ui->tableWidget->setHorizontalHeaderLabels(sList);
     QTextCodec *codec = QTextCodec::codecForName("Shift-JIS");
-    QTableWidgetItem *newItem;//1;
-    /*QTableWidgetItem *newItem2;
-    QTableWidgetItem *newItem3;
-    QTableWidgetItem *newItem4;
-    QTableWidgetItem *newItem5;
-    QTableWidgetItem *newItem6;
-    QTableWidgetItem *newItem7;
-    QTableWidgetItem *newItem8;*/
+    QTableWidgetItem *newItem;
     QString Items[8];
     for (i=0; i<SavesList.size(); i++)
     {
@@ -249,8 +268,8 @@ void MainWindow::ParseHugeRAM()
     {
         ui->SaveButton->setEnabled(true);//still enable save
         ui->ExtractButton->setEnabled(false);//disable extract
-        ui->InsertButton->setEnabled(false);//disable insert
-        ui->RepackButton->setEnabled(false);//disable repack
+        ui->InsertButton->setEnabled(true);//enable insert
+        ui->RepackButton->setEnabled(true);//enable repack
         ui->DeleteButton->setEnabled(false);//disable delete
     }
 }
@@ -1173,4 +1192,50 @@ void MainWindow::on_Sort_Order_Changed(int logicalIndex)
 void MainWindow::on_Setup_Accepted()
 {
     ParseHugeRAM();
+}
+
+void MainWindow::on_NewButton_clicked()
+{
+    //allocating new saveram
+    TheConfig->LoadFromRegistry();
+    if (SavesList.size()>0)
+    {
+        QMessageBox msgBox;
+        msgBox.setText(QString("Do you want to clear existing data?"));
+        msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+        if (msgBox.exec() == QMessageBox::Cancel)
+            return;
+    }
+    //NewSettings.iIOCustomClusterSize=TheConfig->m_iClusterSize;
+    NewDialog MyLittleNewDialog(&NewSettings);
+    if (MyLittleNewDialog.exec() == QDialog::Rejected) return;
+    SavesList.clear();
+    HugeRAM.clear();
+    HugeRAM.fill((char)0,NewSettings.iImageSize*1024);
+    switch(NewSettings.IOClusterSize)
+    {
+    case CLUSTER_64:
+        TheConfig->m_iClusterSize = 64;
+        for (int i=0;i<4;i++)
+            HugeRAM.replace(16*i,16,QByteArray("BackUpRam Format"));
+    break;
+    case CLUSTER_256:
+        TheConfig->m_iClusterSize = 256;
+        for (int i=0;i<16;i++)
+            HugeRAM.replace(16*i,16,QByteArray("BackUpRam Format"));
+    break;
+    case CLUSTER_512:
+        TheConfig->m_iClusterSize = 512;
+        for (int i=0;i<32;i++)
+            HugeRAM.replace(16*i,16,QByteArray("BackUpRam Format"));
+    break;
+    case CLUSTER_CUSTOM:
+        TheConfig->m_iClusterSize = (NewSettings.iIOCustomClusterSize/16)*16;
+        for (int i=0;i<NewSettings.iIOCustomClusterSize/16;i++)
+            HugeRAM.replace(16*i,16,QByteArray("BackUpRam Format"));
+    break;
+    }
+    TheConfig->m_iFileSize = NewSettings.iImageSize*1024;
+    TheConfig->SaveToRegistry();
+    ParseHugeRAM();//updating
 }

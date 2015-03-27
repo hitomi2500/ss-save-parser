@@ -74,7 +74,18 @@ void Config::UpdateFlags()
         m_bInsertSysAll=false;
         m_bInsertSysUseCounter=false;
         break;
-    case ExtractAR:
+    case InsertAR:
+        m_bInsertDateTime=true;
+        m_bInsertDescription=true;
+        m_bInsertLanguage=true;
+        m_bInsertName=true;
+        m_bInsertSAT=true;
+        m_bInsertSize=true;
+        m_bInsertSys=true;
+        m_bInsertSysAll=true;
+        m_bInsertSysUseCounter=false;
+        break;
+    case InsertFull:
         m_bInsertDateTime=true;
         m_bInsertDescription=true;
         m_bInsertLanguage=true;
@@ -85,18 +96,7 @@ void Config::UpdateFlags()
         m_bInsertSysAll=true;
         m_bInsertSysUseCounter=true;
         break;
-    case ExtractFull:
-        m_bInsertDateTime=true;
-        m_bInsertDescription=true;
-        m_bInsertLanguage=true;
-        m_bInsertName=true;
-        m_bInsertSAT=true;
-        m_bInsertSize=true;
-        m_bInsertSys=true;
-        m_bInsertSysAll=true;
-        m_bInsertSysUseCounter=false;
-        break;
-    case ExtractRaw:
+    case InsertRaw:
         m_bInsertDateTime=false;
         m_bInsertDescription=false;
         m_bInsertLanguage=false;
@@ -107,7 +107,7 @@ void Config::UpdateFlags()
         m_bInsertSysAll=false;
         m_bInsertSysUseCounter=false;
         break;
-    case ExtractManual:
+    case InsertManual:
         break;
     }
 }
@@ -115,9 +115,6 @@ void Config::UpdateFlags()
 void Config::SaveToRegistry()
 {
     UpdateFlags();
-    //TheSettings->setValue("Load Mode",(int)m_LoadMode);
-    //TheSettings->setValue("Save Mode",(int)m_SaveMode);
-    //TheSettings->setValue("Load Cluster Size",(int)m_LoadClusterSize);
     TheSettings->setValue("Extract Mode",(int)m_ExtractMode);
     TheSettings->setValue("Extract Sys",m_bExtractSys);
     TheSettings->setValue("Extract Sys All",m_bExtractSysAll);
@@ -145,9 +142,6 @@ void Config::SaveToRegistry()
 
 void Config::LoadFromRegistry()
 {
-    //m_LoadMode = (LoadMode)TheSettings->value("Load Mode").toInt();
-    //m_SaveMode = (SaveMode)TheSettings->value("Save Mode").toInt();
-    //m_LoadClusterSize = (LoadClusterSize)TheSettings->value("Load Cluster Size").toInt();
     m_ExtractMode = (ExtractMode)TheSettings->value("Extract Mode").toInt();
     m_bExtractSys = TheSettings->value("Extract Sys").toBool();
     m_bExtractSysAll = TheSettings->value("Extract Sys All").toBool();

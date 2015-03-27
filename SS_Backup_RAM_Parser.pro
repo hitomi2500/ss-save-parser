@@ -6,6 +6,9 @@
 
 QT       += core gui
 
+VERSION = 0.9.1
+DEFINES += APP_VERSION=\\\"$$VERSION\\\"
+
 QMAKE_LFLAGS += -static -static-libgcc
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -20,19 +23,22 @@ SOURCES += main.cpp\
     config.cpp \
     parselib.cpp \
     entersavedetailsdialog.cpp \
-    fileiosettingsdialog.cpp
+    fileiosettingsdialog.cpp \
+    newdialog.cpp
 
 HEADERS  += mainwindow.h \
     setupwindow.h \
     config.h \
     parselib.h \
     entersavedetailsdialog.h \
-    fileiosettingsdialog.h
+    fileiosettingsdialog.h \
+    newdialog.h
 
 FORMS    += mainwindow.ui \
     setupwindow.ui \
     entersavedetailsdialog.ui \
-    fileiosettingsdialog.ui
+    fileiosettingsdialog.ui \
+    newdialog.ui
 
 DISTFILES +=
 

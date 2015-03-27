@@ -19,6 +19,12 @@ typedef struct MyIOSettings{
     bool bClusterSizeChangeable;
 } FileIOSettingsType;
 
+typedef struct MyNewSettings{
+    FileIOClusterSize IOClusterSize;
+    int iIOCustomClusterSize;
+    int iImageSize;
+} NewSettingsType;
+
 typedef struct MySave{
     QByteArray Name;
     QByteArray Comment;
@@ -45,12 +51,11 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-public slots:
+private slots:
     void on_Sort_Order_Changed(int logicalIndex);
 
     void on_Setup_Accepted();
 
-private slots:
     void on_SetupButton_clicked();
 
     void on_RepackButton_clicked();
@@ -65,11 +70,14 @@ private slots:
 
     void on_SaveButton_clicked();
 
+    void on_NewButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     SetupWindow *SetupWin;
     Config *TheConfig;
     FileIOSettingsType IOSettings;
+    NewSettingsType NewSettings;
     void ParseHugeRAM();
 
 };

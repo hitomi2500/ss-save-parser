@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>733</width>
-    <height>293</height>
+    <height>330</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -32,9 +32,16 @@
      <height>999999</height>
     </size>
    </property>
-   <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,10000" columnstretch="10000,0">
+   <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,10000,0" columnstretch="10000,0">
     <item row="0" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QPushButton" name="NewButton">
+        <property name="text">
+         <string>New</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QPushButton" name="LoadButton">
         <property name="text">
@@ -139,6 +146,63 @@
     </item>
     <item row="1" column="0">
      <widget class="QTableWidget" name="tableWidget"/>
+    </item>
+    <item row="2" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QProgressBar" name="ImageFillProgressBar">
+        <property name="value">
+         <number>24</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Image size:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLCDNumber" name="ImageSizeLcdNumber"/>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Cluster size:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLCDNumber" name="ClusterSizeLcdNumber"/>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>

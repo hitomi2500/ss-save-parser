@@ -17,15 +17,15 @@ public:
     ~SetupWindow();
     void UpdateFromConfig();
 
-signals:
-    SetupAccepted();
+//signals:
+    //SetupAccepted();
 
 private slots:
     void on_SetupWindow_accepted();
 
-    void on_comboBox_9_currentIndexChanged(int index);
+    void on_comboBox_ExtractMode_currentIndexChanged(int index);
 
-    void on_comboBox_10_currentIndexChanged(int index);
+    void on_comboBox_InsertMode_currentIndexChanged(int index);
 
     void on_radioButton_pressed();
 
@@ -33,43 +33,43 @@ private slots:
 
     void on_radioButton_3_pressed();
 
-    void on_checkBox_17_toggled(bool checked);
+    void on_checkBox_ExtractSys_toggled(bool checked);
 
-    void on_checkBox_18_toggled(bool checked);
+    void on_checkBox_FillSysZeros_toggled(bool checked);
 
-    void on_checkBox_19_toggled(bool checked);
+    void on_checkBox_ExtractName_toggled(bool checked);
 
-    void on_checkBox_20_toggled(bool checked);
+    void on_checkBox_ExtractComment_toggled(bool checked);
 
-    void on_checkBox_21_toggled(bool checked);
+    void on_checkBox_ExtractDateTime_toggled(bool checked);
 
-    void on_checkBox_22_toggled(bool checked);
+    void on_checkBox_ExtractSize_toggled(bool checked);
 
-    void on_checkBox_23_toggled(bool checked);
+    void on_checkBox_ExtractSAT_toggled(bool checked);
 
-    void on_checkBox_31_toggled(bool checked);
+    void on_checkBox_ExtractLanguage_toggled(bool checked);
 
-    void on_checkBox_33_toggled(bool checked);
+    void on_checkBox_ExtractSysAll_toggled(bool checked);
 
-    void on_checkBox_24_toggled(bool checked);
+    void on_checkBox_InsertSys_toggled(bool checked);
 
-    void on_checkBox_30_toggled(bool checked);
+    void on_checkBox_InsertSysUseCounter_toggled(bool checked);
 
-    void on_checkBox_25_toggled(bool checked);
+    void on_checkBox_InsertName_toggled(bool checked);
 
-    void on_checkBox_26_toggled(bool checked);
+    void on_checkBox_InsertComment_toggled(bool checked);
 
-    void on_checkBox_27_toggled(bool checked);
+    void on_checkBox_InsertDatetime_toggled(bool checked);
 
-    void on_checkBox_28_toggled(bool checked);
+    void on_checkBox_InsertSize_toggled(bool checked);
 
-    void on_checkBox_29_toggled(bool checked);
+    void on_checkBox_InsertSAT_toggled(bool checked);
 
-    void on_checkBox_32_toggled(bool checked);
-
-    void on_checkBox_34_toggled(bool checked);
+    void on_checkBox_InsertLanguage_toggled(bool checked);
 
     void on_checkBox_ShowHex_toggled(bool checked);
+
+    void on_checkBox_InsertSysAll_toggled(bool checked);
 
 private:
     Ui::SetupWindow *ui;

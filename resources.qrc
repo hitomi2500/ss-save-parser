@@ -1,5 +1,8 @@
 <RCC>
     <qresource prefix="/images">
         <file>masqurin_highwizard.xpm</file>
+        <file>sys_header_start.xpm</file>
+        <file>sys_header_counter.xpm</file>
+        <file>blue_arrow.xpm</file>
     </qresource>
 </RCC>

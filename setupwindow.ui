@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>618</width>
+    <width>676</width>
     <height>402</height>
    </rect>
   </property>
@@ -20,7 +20,7 @@
       <string/>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="CommonTab">
       <attribute name="title">
@@ -54,16 +54,6 @@
        <string>Extract</string>
       </attribute>
       <layout class="QGridLayout" name="verticalLayout_11">
-       <item row="3" column="1">
-        <widget class="QTableWidget" name="tableWidget_ExtractImage"/>
-       </item>
-       <item row="1" column="3">
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>In file</string>
-         </property>
-        </widget>
-       </item>
        <item row="0" column="0" rowspan="2">
         <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
@@ -74,72 +64,170 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="comboBox_9"/>
+          <widget class="QComboBox" name="comboBox_ExtractMode"/>
          </item>
         </layout>
        </item>
-       <item row="3" column="0">
-        <layout class="QVBoxLayout" name="verticalLayout_12">
-         <item>
-          <widget class="QCheckBox" name="checkBox_17">
+       <item row="3" column="4">
+        <layout class="QFormLayout" name="formLayout">
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_Extract_L1">
            <property name="text">
-            <string>Add 1st sys header</string>
+            <string>L1</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QCheckBox" name="checkBox_33">
+         <item row="1" column="1">
+          <widget class="QLabel" name="label_28">
            <property name="text">
-            <string>Add 2.. sys headers</string>
+            <string>Sys header</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QCheckBox" name="checkBox_18">
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_Extract_L2">
            <property name="text">
-            <string>Fill sys headers with zeros</string>
+            <string>L2</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QCheckBox" name="checkBox_19">
+         <item row="2" column="1">
+          <widget class="QLabel" name="label_30">
            <property name="text">
-            <string>Add name</string>
+            <string>Start mark</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QCheckBox" name="checkBox_31">
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_Extract_L3">
            <property name="text">
-            <string>Add language code</string>
+            <string>L3</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QCheckBox" name="checkBox_20">
+         <item row="3" column="1">
+          <widget class="QLabel" name="label_9">
            <property name="text">
-            <string>Add comment</string>
+            <string>Counter</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QCheckBox" name="checkBox_21">
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_Extract_L4">
            <property name="text">
-            <string>Add date and time</string>
+            <string>L4</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QCheckBox" name="checkBox_22">
+         <item row="4" column="1">
+          <widget class="QLabel" name="label_11">
            <property name="text">
-            <string>Add size in bytes</string>
+            <string>Name</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QCheckBox" name="checkBox_23">
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_Extract_L5">
            <property name="text">
-            <string>Add allocation table</string>
+            <string>L5</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QLabel" name="label_32">
+           <property name="text">
+            <string>Language</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QLabel" name="label_Extract_L6">
+           <property name="text">
+            <string>L6</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="1">
+          <widget class="QLabel" name="label_34">
+           <property name="text">
+            <string>Comment</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="0">
+          <widget class="QLabel" name="label_Extract_L7">
+           <property name="text">
+            <string>L7</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="1">
+          <widget class="QLabel" name="label_20">
+           <property name="text">
+            <string>Date/time</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="0">
+          <widget class="QLabel" name="label_Extract_L8">
+           <property name="text">
+            <string>L8</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="1">
+          <widget class="QLabel" name="label_22">
+           <property name="text">
+            <string>Size</string>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="0">
+          <widget class="QLabel" name="label_Extract_L9">
+           <property name="text">
+            <string>L9</string>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="1">
+          <widget class="QLabel" name="label_23">
+           <property name="text">
+            <string>Alloc.table</string>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="0">
+          <widget class="QLabel" name="label_Extract_L10">
+           <property name="text">
+            <string>L10</string>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="1">
+          <widget class="QLabel" name="label_26">
+           <property name="text">
+            <string>Data(not to scale)</string>
+           </property>
+          </widget>
+         </item>
+         <item row="11" column="0">
+          <widget class="QLabel" name="label_Extract_L11">
+           <property name="text">
+            <string>L11</string>
+           </property>
+          </widget>
+         </item>
+         <item row="11" column="1">
+          <widget class="QLabel" name="label_8">
+           <property name="text">
+            <string>Empty</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLabel" name="label_27">
+           <property name="text">
+            <string>Legend:</string>
            </property>
           </widget>
          </item>
@@ -152,6 +240,80 @@
          </property>
         </widget>
        </item>
+       <item row="1" column="3">
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>In file</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <layout class="QVBoxLayout" name="verticalLayout_12">
+         <item>
+          <widget class="QCheckBox" name="checkBox_ExtractSys">
+           <property name="text">
+            <string>Add 1st sys header</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBox_ExtractSysAll">
+           <property name="text">
+            <string>Add 2.. sys headers</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBox_FillSysZeros">
+           <property name="text">
+            <string>Fill sys headers with zeros</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBox_ExtractName">
+           <property name="text">
+            <string>Add name</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBox_ExtractLanguage">
+           <property name="text">
+            <string>Add language code</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBox_ExtractComment">
+           <property name="text">
+            <string>Add comment</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBox_ExtractDateTime">
+           <property name="text">
+            <string>Add date and time</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBox_ExtractSize">
+           <property name="text">
+            <string>Add size in bytes</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBox_ExtractSAT">
+           <property name="text">
+            <string>Add allocation table</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
        <item row="1" column="1">
         <widget class="QLabel" name="label_2">
          <property name="text">
@@ -159,168 +321,19 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="3">
-        <widget class="QTableWidget" name="tableWidget_ExtractFile"/>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="label_7">
+       <item row="3" column="1">
+        <widget class="QLabel" name="label_DemoExtractImage">
          <property name="text">
-          <string>Legend:</string>
+          <string>Sexy table here</string>
          </property>
         </widget>
        </item>
-       <item row="5" column="3">
-        <layout class="QHBoxLayout" name="horizontalLayout_6">
-         <item>
-          <widget class="QLabel" name="label_24">
-           <property name="text">
-            <string>L7</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_23">
-           <property name="text">
-            <string>Size</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer_3">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_25">
-           <property name="text">
-            <string>L8</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_26">
-           <property name="text">
-            <string>Allocation table</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item row="5" column="1">
-        <layout class="QHBoxLayout" name="horizontalLayout_4">
-         <item>
-          <widget class="QLabel" name="label_12">
-           <property name="text">
-            <string>L5</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_20">
-           <property name="text">
-            <string>Comment</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer_2">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_21">
-           <property name="text">
-            <string>L6</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_22">
-           <property name="text">
-            <string>Date/time</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item row="4" column="3">
-        <layout class="QHBoxLayout" name="horizontalLayout_3">
-         <item>
-          <widget class="QLabel" name="label_8">
-           <property name="text">
-            <string>L3</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_9">
-           <property name="text">
-            <string>Name</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_10">
-           <property name="text">
-            <string>L4</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_11">
-           <property name="text">
-            <string>Language</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item row="4" column="1">
-        <layout class="QHBoxLayout" name="horizontalLayout_7">
-         <item>
-          <widget class="QLabel" name="label_27">
-           <property name="text">
-            <string>L1</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_28">
-           <property name="text">
-            <string>Sys header</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
+       <item row="3" column="3">
+        <widget class="QLabel" name="label_DemoExtractFile">
+         <property name="text">
+          <string>Sexy table here</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -332,72 +345,69 @@
        <item row="5" column="0">
         <layout class="QVBoxLayout" name="verticalLayout_14">
          <item>
-          <widget class="QCheckBox" name="checkBox_24">
+          <widget class="QCheckBox" name="checkBox_InsertSys">
            <property name="text">
             <string>Use 1st sys header</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="checkBox_34">
+          <widget class="QCheckBox" name="checkBox_InsertSysAll">
            <property name="text">
             <string>Use 2.. sys headers</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="checkBox_30">
+          <widget class="QCheckBox" name="checkBox_InsertSysUseCounter">
            <property name="text">
             <string>Use counter in sys header</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="checkBox_25">
+          <widget class="QCheckBox" name="checkBox_InsertName">
            <property name="text">
             <string>Use name</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="checkBox_32">
+          <widget class="QCheckBox" name="checkBox_InsertLanguage">
            <property name="text">
             <string>Use language code</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="checkBox_26">
+          <widget class="QCheckBox" name="checkBox_InsertComment">
            <property name="text">
             <string>Use comment</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="checkBox_27">
+          <widget class="QCheckBox" name="checkBox_InsertDatetime">
            <property name="text">
             <string>Use date and time</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="checkBox_28">
+          <widget class="QCheckBox" name="checkBox_InsertSize">
            <property name="text">
             <string>Use size</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="checkBox_29">
+          <widget class="QCheckBox" name="checkBox_InsertSAT">
            <property name="text">
             <string>Use allocation table</string>
            </property>
           </widget>
          </item>
         </layout>
-       </item>
-       <item row="5" column="1">
-        <widget class="QTableWidget" name="tableWidget_InsertImage"/>
        </item>
        <item row="0" column="0" rowspan="2">
         <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -409,31 +419,207 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="comboBox_10"/>
+          <widget class="QComboBox" name="comboBox_InsertMode"/>
          </item>
         </layout>
        </item>
        <item row="5" column="3">
-        <widget class="QTableWidget" name="tableWidget_InsertFile"/>
-       </item>
-       <item row="5" column="2">
         <widget class="QLabel" name="label_4">
          <property name="text">
           <string>-&gt;</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
+       <item row="1" column="2">
         <widget class="QLabel" name="label_5">
          <property name="text">
           <string>In file</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="3">
+       <item row="1" column="4">
         <widget class="QLabel" name="label_6">
          <property name="text">
           <string>In Image</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="6">
+        <layout class="QFormLayout" name="formLayout_3">
+         <item row="0" column="1">
+          <widget class="QLabel" name="label_10">
+           <property name="text">
+            <string>Legend:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_Insert_L1">
+           <property name="text">
+            <string>L1</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_Insert_L2">
+           <property name="text">
+            <string>L2</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_Insert_L3">
+           <property name="text">
+            <string>L3</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_Insert_L4">
+           <property name="text">
+            <string>L4</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_Insert_L5">
+           <property name="text">
+            <string>L5</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QLabel" name="label_Insert_L6">
+           <property name="text">
+            <string>L6</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="0">
+          <widget class="QLabel" name="label_Insert_L7">
+           <property name="text">
+            <string>L7</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="0">
+          <widget class="QLabel" name="label_Insert_L8">
+           <property name="text">
+            <string>L8</string>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="0">
+          <widget class="QLabel" name="label_Insert_L9">
+           <property name="text">
+            <string>L9</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLabel" name="label_37">
+           <property name="text">
+            <string>Sys header</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QLabel" name="label_38">
+           <property name="text">
+            <string>Start mark</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLabel" name="label_7">
+           <property name="text">
+            <string>Counter</string>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="0">
+          <widget class="QLabel" name="label_Insert_L10">
+           <property name="text">
+            <string>L10</string>
+           </property>
+          </widget>
+         </item>
+         <item row="11" column="0">
+          <widget class="QLabel" name="label_Insert_L11">
+           <property name="text">
+            <string>L11</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QLabel" name="label_41">
+           <property name="text">
+            <string>Name</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QLabel" name="label_42">
+           <property name="text">
+            <string>Language</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="1">
+          <widget class="QLabel" name="label_43">
+           <property name="text">
+            <string>Comment</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="1">
+          <widget class="QLabel" name="label_44">
+           <property name="text">
+            <string>Date/time</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="1">
+          <widget class="QLabel" name="label_45">
+           <property name="text">
+            <string>Size</string>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="1">
+          <widget class="QLabel" name="label_46">
+           <property name="text">
+            <string>Alloc.table</string>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="1">
+          <widget class="QLabel" name="label_47">
+           <property name="text">
+            <string>Data(not to scale)</string>
+           </property>
+          </widget>
+         </item>
+         <item row="11" column="1">
+          <widget class="QLabel" name="label_48">
+           <property name="text">
+            <string>Empty</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item row="5" column="4">
+        <widget class="QLabel" name="label_DemoInsertImage">
+         <property name="text">
+          <string>Sexy table here too</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="2">
+        <widget class="QLabel" name="label_DemoInsertFile">
+         <property name="text">
+          <string>Sexy table here</string>
          </property>
         </widget>
        </item>
