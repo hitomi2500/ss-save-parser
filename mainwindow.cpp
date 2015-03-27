@@ -685,6 +685,13 @@ void MainWindow::on_ExtractButton_clicked()
         buf[3]=(unsigned char)(tmpSave.iBytes);
         file_out.write(buf,4);
     }
+    //Druid II specific - add 2 zeroes after header
+    if (TheConfig->m_ExtractMode == ExtractDruidII)
+    {
+        buf[0]=(unsigned char)0;
+        buf[1]=(unsigned char)0;
+        file_out.write(buf,2);
+    }
     //write 1st cluster
     int iSATnDataSize = tmpSave.iSATSize*2 + tmpSave.iBytes;
     if ((iSATnDataSize + 34 ) < TheConfig->m_iClusterSize )
@@ -939,6 +946,12 @@ void MainWindow::on_InsertButton_clicked()
         //no file size is provided, counting it
         //this value is not countable yet, we will count it later, after we'll read SAT
     }
+    //Druid II specific - skip 2 zeroes after header
+    if (TheConfig->m_ExtractMode == ExtractDruidII)
+    {
+        file_in.read(buf,2);
+    }
+    //sat
     if (TheConfig->m_bInsertSAT)
     {
         //old SAT is only acceptable if we use the same cluster value

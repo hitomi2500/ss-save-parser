@@ -14,11 +14,13 @@ SetupWindow::SetupWindow(QWidget *parent) :
     ui->comboBox_ExtractMode->addItem(QString("AR-like"));
     ui->comboBox_ExtractMode->addItem(QString("Full"));
     ui->comboBox_ExtractMode->addItem(QString("RAW"));
+    ui->comboBox_ExtractMode->addItem(QString("Druid II mode"));
     ui->comboBox_ExtractMode->addItem(QString("Manual"));
     ui->comboBox_InsertMode->addItem(QString("SSF-like"));
     ui->comboBox_InsertMode->addItem(QString("AR-like"));
     ui->comboBox_InsertMode->addItem(QString("Full"));
     ui->comboBox_InsertMode->addItem(QString("RAW"));
+    ui->comboBox_InsertMode->addItem(QString("Druid II mode"));
     ui->comboBox_InsertMode->addItem(QString("Manual"));
     QImage img(QSize(10,10),QImage::Format_RGB32);
     img.fill(QColor(0,0,0));
@@ -77,7 +79,11 @@ void SetupWindow::UpdateFromConfig()
     switch (SetupConfig->m_ExtractMode)
     {
         case ExtractSSF:
-            ui->comboBox_ExtractMode->setCurrentIndex(0);
+        case ExtractDruidII: //the same as SSF, only adding 2 zeroes at the end of header
+            if (SetupConfig->m_ExtractMode == ExtractSSF)
+                ui->comboBox_ExtractMode->setCurrentIndex(0);
+            if (SetupConfig->m_ExtractMode == ExtractDruidII)
+                ui->comboBox_ExtractMode->setCurrentIndex(4);
             ui->checkBox_ExtractSys->setDisabled(true);
             ui->checkBox_ExtractSys->setChecked(false);
             ui->checkBox_FillSysZeros->setDisabled(true);
@@ -186,7 +192,11 @@ void SetupWindow::UpdateFromConfig()
     switch (SetupConfig->m_InsertMode)
     {
         case InsertSSF:
-            ui->comboBox_InsertMode->setCurrentIndex(0);
+        case InsertDruidII: //the same as SSF, only adding 2 zeroes at the end of header
+            if (SetupConfig->m_InsertMode == InsertSSF)
+                ui->comboBox_InsertMode->setCurrentIndex(0);
+            if (SetupConfig->m_InsertMode == InsertDruidII)
+                ui->comboBox_InsertMode->setCurrentIndex(4);
             ui->checkBox_InsertSys->setDisabled(true);
             ui->checkBox_InsertSys->setChecked(false);
             ui->checkBox_InsertSysAll->setDisabled(true);
@@ -471,6 +481,15 @@ void SetupWindow::UpdateFromConfig()
             iCurrentPos++;
         }
     }
+    if (SetupConfig->m_ExtractMode == ExtractDruidII)
+    {
+        //Druid II specific - add 2 zeroes after header
+        for (int i=0;i<2;i++)
+        {
+            MyLittlePainter.fillRect(1+11*(iCurrentPos%16),1+11*(iCurrentPos/16),10,10,QBrush(Qt::white,Qt::SolidPattern));
+            iCurrentPos++;
+        }
+    }
     iCurrentPosAtImage = 34;
     //draw sat, making it overwriting cluster for clarity
     for (int i=0;i<84;i++)
@@ -619,6 +638,15 @@ void SetupWindow::UpdateFromConfig()
             iCurrentPos++;
         }
     }
+    if (SetupConfig->m_InsertMode == InsertDruidII)
+    {
+        //Druid II specific - add 2 zeroes after header
+        for (int i=0;i<2;i++)
+        {
+            MyLittlePainter.fillRect(1+11*(iCurrentPos%16),1+11*(iCurrentPos/16),10,10,QBrush(Qt::white,Qt::SolidPattern));
+            iCurrentPos++;
+        }
+    }
     iCurrentPosAtImage = 34;
     //draw sat, making it overwriting cluster for clarity
     for (int i=0;i<84;i++)
@@ -716,6 +744,9 @@ void SetupWindow::on_comboBox_ExtractMode_currentIndexChanged(int index)
             SetupConfig->m_ExtractMode = ExtractRaw;
             break;
         case 4 :
+            SetupConfig->m_ExtractMode = ExtractDruidII;
+            break;
+        case 5 :
             SetupConfig->m_ExtractMode = ExtractManual;
             break;
     }
@@ -740,6 +771,9 @@ void SetupWindow::on_comboBox_InsertMode_currentIndexChanged(int index)
             SetupConfig->m_InsertMode = InsertRaw;
             break;
         case 4 :
+            SetupConfig->m_InsertMode = InsertDruidII;
+            break;
+        case 5 :
             SetupConfig->m_InsertMode = InsertManual;
             break;
     }

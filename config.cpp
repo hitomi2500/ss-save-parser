@@ -15,6 +15,7 @@ void Config::UpdateFlags()
     switch (m_ExtractMode)
     {
     case ExtractSSF:
+    case ExtractDruidII: //the same as SSF, only adding 2 zeroes at the end of header
         m_bExtractDateTime=true;
         m_bExtractDescription=true;
         m_bExtractLanguage=true;
@@ -64,6 +65,7 @@ void Config::UpdateFlags()
     switch (m_InsertMode)
     {
     case InsertSSF:
+    case InsertDruidII: //the same as SSF, only adding 2 zeroes at the end of header
         m_bInsertDateTime=true;
         m_bInsertDescription=true;
         m_bInsertLanguage=true;

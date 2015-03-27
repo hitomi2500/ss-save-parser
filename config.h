@@ -3,8 +3,8 @@
 
 #include <QSettings>
 
-enum ExtractMode {ExtractSSF,ExtractAR,ExtractFull,ExtractRaw,ExtractManual};
-enum InsertMode {InsertSSF,InsertAR,InsertFull,InsertRaw,InsertManual};
+enum ExtractMode {ExtractSSF,ExtractAR,ExtractFull,ExtractRaw,ExtractDruidII,ExtractManual};
+enum InsertMode {InsertSSF,InsertAR,InsertFull,InsertRaw,InsertDruidII,InsertManual};
 enum DeleteMode {DeleteSingleSys,DeleteAllSys,DeleteFull};
 
 class Config
