@@ -79,11 +79,7 @@ void SetupWindow::UpdateFromConfig()
     switch (SetupConfig->m_ExtractMode)
     {
         case ExtractSSF:
-        case ExtractDruidII: //the same as SSF, only adding 2 zeroes at the end of header
-            if (SetupConfig->m_ExtractMode == ExtractSSF)
-                ui->comboBox_ExtractMode->setCurrentIndex(0);
-            if (SetupConfig->m_ExtractMode == ExtractDruidII)
-                ui->comboBox_ExtractMode->setCurrentIndex(4);
+            ui->comboBox_ExtractMode->setCurrentIndex(0);
             ui->checkBox_ExtractSys->setDisabled(true);
             ui->checkBox_ExtractSys->setChecked(false);
             ui->checkBox_FillSysZeros->setDisabled(true);
@@ -166,8 +162,29 @@ void SetupWindow::UpdateFromConfig()
             ui->checkBox_ExtractSysAll->setDisabled(true);
             ui->checkBox_ExtractSysAll->setChecked(false);
             break;
-        case ExtractManual:
+        case ExtractDruidII:
             ui->comboBox_ExtractMode->setCurrentIndex(4);
+            ui->checkBox_ExtractSys->setDisabled(true);
+            ui->checkBox_ExtractSys->setChecked(false);
+            ui->checkBox_FillSysZeros->setDisabled(true);
+            ui->checkBox_FillSysZeros->setChecked(false);
+            ui->checkBox_ExtractName->setDisabled(true);
+            ui->checkBox_ExtractName->setChecked(true);
+            ui->checkBox_ExtractComment->setDisabled(true);
+            ui->checkBox_ExtractComment->setChecked(true);
+            ui->checkBox_ExtractDateTime->setDisabled(true);
+            ui->checkBox_ExtractDateTime->setChecked(true);
+            ui->checkBox_ExtractSize->setDisabled(true);
+            ui->checkBox_ExtractSize->setChecked(true);
+            ui->checkBox_ExtractSAT->setDisabled(true);
+            ui->checkBox_ExtractSAT->setChecked(false);
+            ui->checkBox_ExtractLanguage->setDisabled(true);
+            ui->checkBox_ExtractLanguage->setChecked(true);
+            ui->checkBox_ExtractSysAll->setDisabled(true);
+            ui->checkBox_ExtractSysAll->setChecked(false);
+            break;
+        case ExtractManual:
+            ui->comboBox_ExtractMode->setCurrentIndex(5);
             ui->checkBox_ExtractSys->setDisabled(false);
             ui->checkBox_ExtractSys->setChecked(SetupConfig->m_bExtractSys);
             ui->checkBox_FillSysZeros->setDisabled(false);
@@ -192,11 +209,7 @@ void SetupWindow::UpdateFromConfig()
     switch (SetupConfig->m_InsertMode)
     {
         case InsertSSF:
-        case InsertDruidII: //the same as SSF, only adding 2 zeroes at the end of header
-            if (SetupConfig->m_InsertMode == InsertSSF)
-                ui->comboBox_InsertMode->setCurrentIndex(0);
-            if (SetupConfig->m_InsertMode == InsertDruidII)
-                ui->comboBox_InsertMode->setCurrentIndex(4);
+            ui->comboBox_InsertMode->setCurrentIndex(0);
             ui->checkBox_InsertSys->setDisabled(true);
             ui->checkBox_InsertSys->setChecked(false);
             ui->checkBox_InsertSysAll->setDisabled(true);
@@ -279,8 +292,29 @@ void SetupWindow::UpdateFromConfig()
             ui->checkBox_InsertSAT->setDisabled(true);
             ui->checkBox_InsertSAT->setChecked(false);
             break;
-        case InsertManual:
+        case InsertDruidII:
             ui->comboBox_InsertMode->setCurrentIndex(4);
+            ui->checkBox_InsertSys->setDisabled(true);
+            ui->checkBox_InsertSys->setChecked(false);
+            ui->checkBox_InsertSysAll->setDisabled(true);
+            ui->checkBox_InsertSysAll->setChecked(false);
+            ui->checkBox_InsertSysUseCounter->setDisabled(true);
+            ui->checkBox_InsertSysUseCounter->setChecked(false);
+            ui->checkBox_InsertName->setDisabled(true);
+            ui->checkBox_InsertName->setChecked(true);
+            ui->checkBox_InsertLanguage->setDisabled(true);
+            ui->checkBox_InsertLanguage->setChecked(true);
+            ui->checkBox_InsertComment->setDisabled(true);
+            ui->checkBox_InsertComment->setChecked(true);
+            ui->checkBox_InsertDatetime->setDisabled(true);
+            ui->checkBox_InsertDatetime->setChecked(true);
+            ui->checkBox_InsertSize->setDisabled(true);
+            ui->checkBox_InsertSize->setChecked(true);
+            ui->checkBox_InsertSAT->setDisabled(true);
+            ui->checkBox_InsertSAT->setChecked(false);
+            break;
+        case InsertManual:
+            ui->comboBox_InsertMode->setCurrentIndex(5);
             ui->checkBox_InsertSys->setDisabled(false);
             ui->checkBox_InsertSys->setChecked(SetupConfig->m_bInsertSys);
             ui->checkBox_InsertSysAll->setDisabled(false);

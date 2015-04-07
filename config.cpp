@@ -15,7 +15,6 @@ void Config::UpdateFlags()
     switch (m_ExtractMode)
     {
     case ExtractSSF:
-    case ExtractDruidII: //the same as SSF, only adding 2 zeroes at the end of header
         m_bExtractDateTime=true;
         m_bExtractDescription=true;
         m_bExtractLanguage=true;
@@ -59,13 +58,23 @@ void Config::UpdateFlags()
         m_bExtractSysAll=false;
         m_bExtractSysFillZero=false;
         break;
+    case ExtractDruidII:
+        m_bExtractDateTime=true;
+        m_bExtractDescription=true;
+        m_bExtractLanguage=true;
+        m_bExtractName=true;
+        m_bExtractSAT=false;
+        m_bExtractSize=true;
+        m_bExtractSys=false;
+        m_bExtractSysAll=false;
+        m_bExtractSysFillZero=false;
+        break;
     case ExtractManual:
         break;
     }
     switch (m_InsertMode)
     {
     case InsertSSF:
-    case InsertDruidII: //the same as SSF, only adding 2 zeroes at the end of header
         m_bInsertDateTime=true;
         m_bInsertDescription=true;
         m_bInsertLanguage=true;
@@ -105,6 +114,17 @@ void Config::UpdateFlags()
         m_bInsertName=false;
         m_bInsertSAT=false;
         m_bInsertSize=false;
+        m_bInsertSys=false;
+        m_bInsertSysAll=false;
+        m_bInsertSysUseCounter=false;
+        break;
+    case InsertDruidII:
+        m_bInsertDateTime=true;
+        m_bInsertDescription=true;
+        m_bInsertLanguage=true;
+        m_bInsertName=true;
+        m_bInsertSAT=false;
+        m_bInsertSize=true;
         m_bInsertSys=false;
         m_bInsertSysAll=false;
         m_bInsertSysUseCounter=false;

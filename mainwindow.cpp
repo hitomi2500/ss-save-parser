@@ -278,6 +278,7 @@ void MainWindow::on_LoadButton_clicked()
 {
     //loading a file into internal ram, eh? registry reading first
     char cbuf[256];
+    char cbuf_prev[256];
     int i,j;
     TheConfig->LoadFromRegistry();
     //now go on
@@ -299,6 +300,151 @@ void MainWindow::on_LoadButton_clicked()
         //raw mode detected
         IOSettings.IOMode = RAW_IO_MODE;
     }
+    else if (QByteArray(cbuf,16).startsWith("SEGA SEGASATURN"))
+    {
+        //some boot image detected
+        QMessageBox msgBox;
+        msgBox.setText(QString("I see what you did here. It is an image of some kind of a bootable cartridge, right? I can TRY to import (only import!) some saves off this image, but this is extremely experimental, so no promises. And you know what? I want that image. Contact me via github project ss-backup-parser. So, let us try then?"));
+        msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+        if (msgBox.exec() != QMessageBox::Cancel)
+        {
+            //import datel raw mode
+            SaveType tmpSave;
+            //allocating new saveram
+            TheConfig->LoadFromRegistry();
+            NewDialog MyLittleNewDialog(&NewSettings);
+            if (MyLittleNewDialog.exec() == QDialog::Rejected) return;
+            SavesList.clear();
+            HugeRAM.clear();
+            HugeRAM.fill((char)0,NewSettings.iImageSize*1024);
+            switch(NewSettings.IOClusterSize)
+            {
+            case CLUSTER_64:
+                TheConfig->m_iClusterSize = 64;
+                for (int i=0;i<4;i++)
+                    HugeRAM.replace(16*i,16,QByteArray("BackUpRam Format"));
+            break;
+            case CLUSTER_256:
+                TheConfig->m_iClusterSize = 256;
+                for (int i=0;i<16;i++)
+                    HugeRAM.replace(16*i,16,QByteArray("BackUpRam Format"));
+            break;
+            case CLUSTER_512:
+                TheConfig->m_iClusterSize = 512;
+                for (int i=0;i<32;i++)
+                    HugeRAM.replace(16*i,16,QByteArray("BackUpRam Format"));
+            break;
+            case CLUSTER_CUSTOM:
+                TheConfig->m_iClusterSize = (NewSettings.iIOCustomClusterSize/16)*16;
+                for (int i=0;i<NewSettings.iIOCustomClusterSize/16;i++)
+                    HugeRAM.replace(16*i,16,QByteArray("BackUpRam Format"));
+            break;
+            }
+            TheConfig->m_iFileSize = NewSettings.iImageSize*1024;
+            TheConfig->SaveToRegistry();
+
+            int iLastUsedCluster=2;
+
+            //searching every 256 bytes
+            file_in.seek(0);
+            file_in.read(cbuf_prev,256);
+            int iFileSize = file_in.size();
+            while (iFileSize - file_in.pos()  > 256)
+            {
+                //read next 256 bytes
+                file_in.read(cbuf,32);
+                //check if save
+                if ( (cbuf_prev[255]==-1) &&  (cbuf_prev[254]==-1) &&  (cbuf[0]!=-1) && (cbuf[22]==0) && (cbuf[23]==0))
+                {
+                    //check passed, inserting
+                    tmpSave.iBytes = cbuf[31]+0x100*cbuf[30]+0x10000*cbuf[29]+0x1000000*cbuf[28];
+                    //check if we have enough space at the end of file
+                    //making a brutal check for inserting size:
+                    //each ClusterSize-4 requires additional 6 bytes (2 for SAT, 4 for header)
+                    //plus 36 additional (34 header, 2 zero-sat-entry)
+                    //if that won't fit into remaining clusters, boil out
+                    int iClustersRequired = (tmpSave.iBytes)/(TheConfig->m_iClusterSize-4);
+                    int iBytesRequired = tmpSave.iBytes+iClustersRequired*6+36;
+                    iClustersRequired = iBytesRequired/(TheConfig->m_iClusterSize-4);
+                    if ((TheConfig->m_iFileSize/TheConfig->m_iClusterSize - iLastUsedCluster) <= iClustersRequired)
+                    {
+                        QMessageBox msgBox;
+                        msgBox.setText(QString("Not enough space in image to insert save file %1.").arg(fileName));
+                        msgBox.exec();
+                        return;
+                    }
+                    tmpSave.iStartCluster = iLastUsedCluster+1;
+
+                    //check done, go on
+                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0x80;
+                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1] = 0x0;
+                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2] = 0x0;
+                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3] = 0x0;//making up counter
+                    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+4,11,QByteArray(&cbuf[0],11));//name
+                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+15] = cbuf[11];//lang code
+                    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+16,10,QByteArray(&cbuf[12],10));//comment
+                    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+26,4,QByteArray(&cbuf[24],4));//date
+                    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+30,4,QByteArray(&cbuf[28],4));//size
+                    //calculate sat
+                    tmpSave.iSATSize = 1;
+                    while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
+                        tmpSave.iSATSize++;
+                    //fill new sat
+                    tmpSave.iSATSize++;
+                    for (int i=0;i<(tmpSave.iSATSize-1);i++)
+                        tmpSave.SAT[i] = tmpSave.iStartCluster+i+1;
+                    tmpSave.SAT[tmpSave.iSATSize-1] = 0;
+                    //copy SAT to hugeram
+                    int iPointer = tmpSave.iStartCluster*TheConfig->m_iClusterSize + 34;
+                    for (int i=0;i<tmpSave.iSATSize;i++)
+                    {
+                        if (iPointer % TheConfig->m_iClusterSize == 0)
+                        {
+                            HugeRAM[iPointer] = 0;
+                            HugeRAM[iPointer+1] = 0;
+                            HugeRAM[iPointer+2] = 0;
+                            HugeRAM[iPointer+3] = (unsigned char)tmpSave.cCounter;
+                            iPointer+=4;
+                        }
+                        HugeRAM[iPointer] = (char) ( tmpSave.SAT[i] / 0x100 );
+                        HugeRAM[iPointer+1] = (char) ( tmpSave.SAT[i] % 0x100 );
+                        iPointer+=2;
+                    }
+                    //copy data
+                    for (int i=0; i< tmpSave.iBytes; i++)
+                    {
+                        if (iPointer % TheConfig->m_iClusterSize == 0)
+                        {
+                            HugeRAM[iPointer] = 0;
+                            HugeRAM[iPointer+1] = 0;
+                            HugeRAM[iPointer+2] = 0;
+                            HugeRAM[iPointer+3] = 0;//make up counter
+                            iPointer+=4;
+                        }
+                        file_in.read(cbuf,1);
+                        HugeRAM[iPointer] = cbuf[0];
+                        iPointer++;
+                    }
+                    file_in.read(255-(file_in.pos() % 256));
+                    iLastUsedCluster+=tmpSave.iSATSize;
+                }
+                else
+                {
+                    //not a save, just some 256 bytes of whatever
+                    //we readed already 32 bytes, 224 to go
+                    file_in.read(&cbuf[32],224);
+                }
+                for (i=0;i<256;i++) cbuf_prev[i] = cbuf[i];
+            }
+            //enable name sorting
+            iSortIndex = 0;
+            SortDir = SORT_ASCENDING;
+            //parse
+            ParseHugeRAM();
+        }
+        file_in.close();
+        return;
+    }
     else
     {
         //removing dummy data
@@ -307,6 +453,25 @@ void MainWindow::on_LoadButton_clicked()
         {
             //sh2 mode detected
             IOSettings.IOMode = SH2_IO_MODE;
+        }
+        else if (QByteArray(cbuf,16).startsWith("SEGA SEGASATURN"))
+        {
+            //some boot image detected
+            QMessageBox msgBox;
+            msgBox.setText(QString("I see what you did here. It is an image of some kind of a bootable cartridge, right? I can TRY to import (only import!) some saves off this image, but this is extremely experimental, so no promises. And you know what? I want that image. Contact me via github project ss-backup-parser. So, let us try then?"));
+            msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+            if (msgBox.exec() != QMessageBox::Cancel)
+            {
+                //import datel sh2 mode
+
+                //enable name sorting
+                iSortIndex = 0;
+                SortDir = SORT_ASCENDING;
+                //parse
+                ParseHugeRAM();
+            }
+            file_in.close();
+            return;
         }
         else
         {
@@ -837,14 +1002,16 @@ void MainWindow::on_InsertButton_clicked()
 
     //check if we have enough space at the end of file
     //we don't insert at 0th or 1st cluster - it's signature and always zero
-    //so starting with 2
-    int iLastUsedCluster=2;
+    //so minimal last used is 1 - when image is empty
+    int iLastUsedCluster=1;
     for (int i=0; i<SavesList.size(); i++)
     {
         for (int j=0; j<SavesList.at(i).iSATSize;j++)
         {
             if (SavesList.at(i).SAT[j] > iLastUsedCluster)
                 iLastUsedCluster = SavesList.at(i).SAT[j];
+            if (SavesList.at(i).iStartCluster > iLastUsedCluster)
+                iLastUsedCluster = SavesList.at(i).iStartCluster;
         }
     }
     //making a brutal check for inserting size:
@@ -947,7 +1114,7 @@ void MainWindow::on_InsertButton_clicked()
         //this value is not countable yet, we will count it later, after we'll read SAT
     }
     //Druid II specific - skip 2 zeroes after header
-    if (TheConfig->m_ExtractMode == ExtractDruidII)
+    if (TheConfig->m_InsertMode == InsertDruidII)
     {
         file_in.read(buf,2);
     }
@@ -1017,8 +1184,9 @@ void MainWindow::on_InsertButton_clicked()
         while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
             tmpSave.iSATSize++;
         //fill new sat
+        tmpSave.iSATSize++;
         for (int i=0;i<(tmpSave.iSATSize-1);i++)
-            tmpSave.SAT[i] = tmpSave.iStartCluster+i;
+            tmpSave.SAT[i] = tmpSave.iStartCluster+i+1;
         tmpSave.SAT[tmpSave.iSATSize-1] = 0;
         //copy SAT to hugeram
         int iPointer = tmpSave.iStartCluster*TheConfig->m_iClusterSize + 34;
@@ -1067,9 +1235,14 @@ void MainWindow::on_InsertButton_clicked()
         if (TheConfig->m_bInsertSize)
         {
             //size provided, that's good, we don't need to make any specific actions
+            //calculate new SAT size
+            tmpSave.iSATSize = 1;
+            while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
+                tmpSave.iSATSize++;
             //fill new sat
+            tmpSave.iSATSize++;
             for (int i=0;i<(tmpSave.iSATSize-1);i++)
-                tmpSave.SAT[i] = tmpSave.iStartCluster+i;
+                tmpSave.SAT[i] = tmpSave.iStartCluster+i+1;
             tmpSave.SAT[tmpSave.iSATSize-1] = 0;
             //copy SAT to hugeram
             int iPointer = tmpSave.iStartCluster*TheConfig->m_iClusterSize + 34;
