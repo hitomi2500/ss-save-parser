@@ -38,7 +38,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tableWidget->resizeColumnsToContents();
     ui->tableWidget->resizeRowsToContents();
     ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
-    ui->tableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->tableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);//  SingleSelection);
     ui->RepackButton->setEnabled(false);
     //ui->Repack_Button_2->setEnabled(false);
     ui->SaveButton->setEnabled(false);
@@ -352,12 +352,21 @@ void MainWindow::on_LoadButton_clicked()
             while (iFileSize - file_in.pos()  > 256)
             {
                 //read next 256 bytes
-                file_in.read(cbuf,32);
+                file_in.read(cbuf,40);
                 //check if save
                 if ( (cbuf_prev[255]==-1) &&  (cbuf_prev[254]==-1) &&  (cbuf[0]!=-1) && (cbuf[22]==0) && (cbuf[23]==0))
                 {
                     //check passed, inserting
-                    tmpSave.iBytes = cbuf[31]+0x100*cbuf[30]+0x10000*cbuf[29]+0x1000000*cbuf[28];
+                    //datel format is compression-key-based
+                    //key is a unique 16-bit value at offset 34 in save
+                    //it never appears in original save (datel searches this value from 0x0000 to 0xFFFF
+                    //                                  most of the time it's 0x000X or 0x001X)
+                    //RLE sequences are 48-bit:
+                    //0xKKKK 0xXXXX 0xYYYY - write YYYY copies of XXXX, KKKK is key
+                    tmpSave.iBytes = (unsigned char)cbuf[31]+0x100*(unsigned char)cbuf[30]+0x10000*(unsigned char)cbuf[29]+0x1000000*(unsigned char)cbuf[28];
+                    int iCompressionKey = (unsigned char)cbuf[35]+0x100*(unsigned char)cbuf[34];
+                    int iCompressedBytes = (unsigned char)cbuf[39]+0x100*(unsigned char)cbuf[38]+0x10000*(unsigned char)cbuf[37]+0x1000000*(unsigned char)cbuf[36];
+                    int iDecompressedSize = 0;
                     //check if we have enough space at the end of file
                     //making a brutal check for inserting size:
                     //each ClusterSize-4 requires additional 6 bytes (2 for SAT, 4 for header)
@@ -368,9 +377,15 @@ void MainWindow::on_LoadButton_clicked()
                     iClustersRequired = iBytesRequired/(TheConfig->m_iClusterSize-4);
                     if ((TheConfig->m_iFileSize/TheConfig->m_iClusterSize - iLastUsedCluster) <= iClustersRequired)
                     {
+                        //decompression result is different
                         QMessageBox msgBox;
-                        msgBox.setText(QString("Not enough space in image to insert save file %1.").arg(fileName));
+                        msgBox.setText(QString("Not enough space in image to insert ")+QString(tmpSave.Name)+QString(" and possibly some other saves. Please retry with a bigger image size."));
                         msgBox.exec();
+                        //enable name sorting
+                        iSortIndex = 0;
+                        SortDir = SORT_ASCENDING;
+                        //parse
+                        ParseHugeRAM();
                         return;
                     }
                     tmpSave.iStartCluster = iLastUsedCluster+1;
@@ -387,6 +402,7 @@ void MainWindow::on_LoadButton_clicked()
                     HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+30,4,QByteArray(&cbuf[28],4));//size
                     //calculate sat
                     tmpSave.iSATSize = 1;
+                    tmpSave.Name = QByteArray(&cbuf[0],11);
                     while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
                         tmpSave.iSATSize++;
                     //fill new sat
@@ -411,7 +427,9 @@ void MainWindow::on_LoadButton_clicked()
                         iPointer+=2;
                     }
                     //copy data
-                    for (int i=0; i< tmpSave.iBytes; i++)
+                    int ic=0;
+                    while (ic<iCompressedBytes)
+                    //for (int i=0; i<iCompressedBytes; i+=2)
                     {
                         if (iPointer % TheConfig->m_iClusterSize == 0)
                         {
@@ -421,20 +439,60 @@ void MainWindow::on_LoadButton_clicked()
                             HugeRAM[iPointer+3] = 0;//make up counter
                             iPointer+=4;
                         }
-                        file_in.read(cbuf,1);
-                        HugeRAM[iPointer] = cbuf[0];
-                        iPointer++;
+                        file_in.read(cbuf,2);
+                        ic+=2;
+                        if ((unsigned char)cbuf[1]+0x100*(unsigned char)cbuf[0] == iCompressionKey)
+                        {
+                            //it's an RLE sequence!
+                            file_in.read(cbuf,4);
+                            ic+=4;
+                            for (int j=0;j<((unsigned char)cbuf[3]+0x100*(unsigned char)cbuf[2]);j++)
+                            {
+                                HugeRAM[iPointer] = cbuf[0];
+                                iPointer++;
+                                HugeRAM[iPointer] = cbuf[1];
+                                iPointer++;
+                                iDecompressedSize+=2;
+                                //if we catch cluster boundary while executing RLE sequence, insert sys header
+                                if (iPointer % TheConfig->m_iClusterSize == 0)
+                                {
+                                    HugeRAM[iPointer] = 0;
+                                    HugeRAM[iPointer+1] = 0;
+                                    HugeRAM[iPointer+2] = 0;
+                                    HugeRAM[iPointer+3] = 0;//make up counter
+                                    iPointer+=4;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            HugeRAM[iPointer] = cbuf[0];
+                            iPointer++;
+                            HugeRAM[iPointer] = cbuf[1]; //this might be wrong for odd-sized saves, but cluster end is unused anyway, so who cares?
+                            iPointer++;
+                            iDecompressedSize+=2;
+                        }
                     }
-                    file_in.read(255-(file_in.pos() % 256));
+                    if (iDecompressedSize != tmpSave.iBytes)
+                    {
+                        //decompression result is different
+                        QMessageBox msgBox;
+                        msgBox.setText(QString("Decompression error for ")+QString(tmpSave.Name)+QString(". Size should be %2, but decompressed into %3").arg(tmpSave.iBytes).arg(iDecompressedSize));
+                        msgBox.exec();
+                    }
+                    int iPos = file_in.pos() % 256;
+                    for (int i=0;i<iPos;i++)
+                        cbuf_prev[i] = HugeRAM[iPointer-iPos+i];
+                    file_in.read(&cbuf_prev[iPos],256-iPos);
                     iLastUsedCluster+=tmpSave.iSATSize;
                 }
                 else
                 {
                     //not a save, just some 256 bytes of whatever
-                    //we readed already 32 bytes, 224 to go
-                    file_in.read(&cbuf[32],224);
+                    //we readed already 40 bytes, 216 to go
+                    file_in.read(&cbuf[40],216);
+                    for (i=0;i<256;i++) cbuf_prev[i] = cbuf[i];
                 }
-                for (i=0;i<256;i++) cbuf_prev[i] = cbuf[i];
             }
             //enable name sorting
             iSortIndex = 0;
@@ -764,6 +822,9 @@ void MainWindow::on_ExtractButton_clicked()
     //extract save from image
     char buf[256];
     SaveType tmpSave;
+    QFile file_out;
+    QString fileName;
+    QString folderName;
     TheConfig->LoadFromRegistry();
 
     //first we must check if file is recoverable after all
@@ -783,20 +844,34 @@ void MainWindow::on_ExtractButton_clicked()
         return;
     }
 
-    //get selected save
-    tmpSave = SavesList.at(ui->tableWidget->currentRow());
-    //choose file to save
-    QString fileName = QFileDialog::getSaveFileName(this,tr("Save Savegame"), "", NULL);
-    if (fileName.isEmpty()) return; //return if user cancel
-    QFile file_out(fileName);
-    if (!(file_out.open(QIODevice::WriteOnly)))
+    //get selected save or save range
+    int iStart = ui->tableWidget->selectedRanges().at(0).topRow();
+    int iEnd = ui->tableWidget->selectedRanges().at(0).bottomRow();
+    if (iStart==iEnd)
     {
-        QMessageBox msgBox;
-        msgBox.setText(QString("Cannot open save file %s.").arg(fileName));
-        msgBox.exec();
-        return;
+        //choose single file to save
+        tmpSave = SavesList.at(iStart);//ui->tableWidget->currentRow());
+        fileName = QFileDialog::getSaveFileName(this,tr("Save Savegame"), "", NULL);
+        if (fileName.isEmpty()) return; //return if user cancel
+        file_out.setFileName(fileName);
+        if (!(file_out.open(QIODevice::WriteOnly)))
+        {
+            QMessageBox msgBox;
+            msgBox.setText(QString("Cannot open save file %s.").arg(fileName));
+            msgBox.exec();
+            return;
+        }
     }
-    //file opened, move on
+    else
+    {
+        //when saving multiple files, ask for folder, not for file
+        QFileDialog dialog(this);
+        dialog.setFileMode(QFileDialog::Directory);
+        if (dialog.exec())
+            folderName = dialog.selectedFiles().at(0);
+        else return; //return if user cancel
+    }
+    //file/folder opened, move on
 
     //issue a warning if SAT is off and sys are on
     if ( (TheConfig->m_bExtractSAT==false) && ( (TheConfig->m_bExtractSys) || (TheConfig->m_bExtractSysAll) ) )
@@ -806,158 +881,176 @@ void MainWindow::on_ExtractButton_clicked()
         msgBox.exec();
     }
 
-    //1st cluster
-    if (TheConfig->m_bExtractSys)
+    //saves cycle
+    for (int iSaveIndex = iStart; iSaveIndex <= iEnd; iSaveIndex++)
     {
-        if (TheConfig->m_bExtractSysFillZero)
+        if (iStart != iEnd)
         {
-            buf[0]=(char)0;
-            buf[1]=(char)0;
-            buf[2]=(char)0;
-            buf[3]=(char)0;
-        }
-        else
-        {
-            buf[0] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize];
-            buf[1] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1];
-            buf[2] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2];
-            buf[3] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3];
-        }
-        file_out.write(buf,4);
-    }
-    if (TheConfig->m_bExtractName)
-    {
-        file_out.write(tmpSave.Name,11);
-    }
-    if (TheConfig->m_bExtractLanguage)
-    {
-        buf[0]=(char)tmpSave.iLanguageCode;
-        file_out.write(buf,1);
-    }
-    if (TheConfig->m_bExtractDescription)
-    {
-        file_out.write(tmpSave.Comment,10);
-    }
-    if (TheConfig->m_bExtractDateTime)
-    {
-        file_out.write(tmpSave.DateTimeRaw,4);
-    }
-    if (TheConfig->m_bExtractSize)
-    {
-        buf[0]=(unsigned char)(tmpSave.iBytes/0x1000000);
-        buf[1]=(unsigned char)(tmpSave.iBytes/0x10000);
-        buf[2]=(unsigned char)(tmpSave.iBytes/0x100);
-        buf[3]=(unsigned char)(tmpSave.iBytes);
-        file_out.write(buf,4);
-    }
-    //Druid II specific - add 2 zeroes after header
-    if (TheConfig->m_ExtractMode == ExtractDruidII)
-    {
-        buf[0]=(unsigned char)0;
-        buf[1]=(unsigned char)0;
-        file_out.write(buf,2);
-    }
-    //write 1st cluster
-    int iSATnDataSize = tmpSave.iSATSize*2 + tmpSave.iBytes;
-    if ((iSATnDataSize + 34 ) < TheConfig->m_iClusterSize )
-    {
-        //writing single cluster
-        if (TheConfig->m_bExtractSAT)
-            file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34,tmpSave.iSATSize*2),tmpSave.iSATSize*2);
-        file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34+tmpSave.iSATSize*2,tmpSave.iBytes),tmpSave.iBytes);
-    }
-    else
-    {
-        //writing first cluster
-        if (TheConfig->m_bExtractSAT) //if saving SAT
-            file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34,TheConfig->m_iClusterSize),TheConfig->m_iClusterSize-34);
-        else //not saving SAT
-            if (34+tmpSave.iSATSize*2 < TheConfig->m_iClusterSize) //if sat uses first cluster, but not fully
-                file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34+tmpSave.iSATSize*2,TheConfig->m_iClusterSize),
-                               TheConfig->m_iClusterSize-34-(tmpSave.iSATSize*2));
-
-    }
-    //now remaining clusters
-    int iRemainingBytes = tmpSave.iSATSize*2+tmpSave.iBytes + 34 - TheConfig->m_iClusterSize;
-    for (int i=0;i<tmpSave.iSATSize-1;i++)
-    {
-        if ( iRemainingBytes > (TheConfig->m_iClusterSize-4)) //not counting headers
-        {
-            //full middle block
-            if (TheConfig->m_bExtractSysAll)
+            //if multiple saves load every file now
+            tmpSave = SavesList.at(iSaveIndex);//ui->tableWidget->currentRow());
+            QString fileName = folderName+QString("/")+QString(tmpSave.Name);
+            file_out.setFileName(fileName);
+            if (!(file_out.open(QIODevice::WriteOnly)))
             {
-                //extract header
-                if (TheConfig->m_bExtractSysFillZero)
-                {
-                    buf[0]=(char)0;
-                    buf[1]=(char)0;
-                    buf[2]=(char)0;
-                    buf[3]=(char)0;
-                }
-                else
-                {
-                    buf[0]=(char)0;
-                    buf[1]=(char)0;
-                    buf[2]=(char)0;
-                    buf[3]=tmpSave.cCounter;
-                }
-                file_out.write(buf,4);
+                QMessageBox msgBox;
+                msgBox.setText(QString("Cannot open save file %s.").arg(fileName));
+                msgBox.exec();
+                return;
             }
-            //three cases here: full sat cluster, ful data cluster, sat with data in the end
-            //detecting
-            if ((iRemainingBytes - tmpSave.iBytes) >= (TheConfig->m_iClusterSize-4) )
+        }
+        //1st cluster
+        if (TheConfig->m_bExtractSys)
+        {
+            if (TheConfig->m_bExtractSysFillZero)
             {
-                //full SAT cluster
-                if (TheConfig->m_bExtractSAT)
-                    file_out.write(HugeRAM.mid(tmpSave.SAT[i]*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
-            }
-            else if (iRemainingBytes <= tmpSave.iBytes)
-            {
-                //full data cluster
-                file_out.write(HugeRAM.mid(tmpSave.SAT[i]*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
+                buf[0]=(char)0;
+                buf[1]=(char)0;
+                buf[2]=(char)0;
+                buf[3]=(char)0;
             }
             else
             {
-                int iRemainingSAT = iRemainingBytes - tmpSave.iBytes;
-                //SAT with data in the end
-                if (TheConfig->m_bExtractSAT) //write as is
-                    file_out.write(HugeRAM.mid(tmpSave.SAT[i]*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
-                else  //only write data part
-                    file_out.write(HugeRAM.mid(tmpSave.SAT[i]*TheConfig->m_iClusterSize+4+iRemainingSAT,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4-iRemainingSAT);
+                buf[0] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize];
+                buf[1] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1];
+                buf[2] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2];
+                buf[3] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3];
             }
-            iRemainingBytes -= TheConfig->m_iClusterSize;
-            iRemainingBytes +=4;
+            file_out.write(buf,4);
+        }
+        if (TheConfig->m_bExtractName)
+        {
+            file_out.write(tmpSave.Name,11);
+        }
+        if (TheConfig->m_bExtractLanguage)
+        {
+            buf[0]=(char)tmpSave.iLanguageCode;
+            file_out.write(buf,1);
+        }
+        if (TheConfig->m_bExtractDescription)
+        {
+            file_out.write(tmpSave.Comment,10);
+        }
+        if (TheConfig->m_bExtractDateTime)
+        {
+            file_out.write(tmpSave.DateTimeRaw,4);
+        }
+        if (TheConfig->m_bExtractSize)
+        {
+            buf[0]=(unsigned char)(tmpSave.iBytes/0x1000000);
+            buf[1]=(unsigned char)(tmpSave.iBytes/0x10000);
+            buf[2]=(unsigned char)(tmpSave.iBytes/0x100);
+            buf[3]=(unsigned char)(tmpSave.iBytes);
+            file_out.write(buf,4);
+        }
+        //Druid II specific - add 2 zeroes after header
+        if (TheConfig->m_ExtractMode == ExtractDruidII)
+        {
+            buf[0]=(unsigned char)0;
+            buf[1]=(unsigned char)0;
+            file_out.write(buf,2);
+        }
+        //write 1st cluster
+        int iSATnDataSize = tmpSave.iSATSize*2 + tmpSave.iBytes;
+        if ((iSATnDataSize + 34 ) < TheConfig->m_iClusterSize )
+        {
+            //writing single cluster
+            if (TheConfig->m_bExtractSAT)
+                file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34,tmpSave.iSATSize*2),tmpSave.iSATSize*2);
+            file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34+tmpSave.iSATSize*2,tmpSave.iBytes),tmpSave.iBytes);
         }
         else
         {
-            //write last cluster
-            //last cluster here is definitely NOT SAT, so no SAT checks here
-            // (this last cluster case is not used when save is only 1 cluster,
-            //  only when save is 2 or more clusters, so don't worry)
-            if (TheConfig->m_bExtractSysAll)
+            //writing first cluster
+            if (TheConfig->m_bExtractSAT) //if saving SAT
+                file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34,TheConfig->m_iClusterSize),TheConfig->m_iClusterSize-34);
+            else //not saving SAT
+                if (34+tmpSave.iSATSize*2 < TheConfig->m_iClusterSize) //if sat uses first cluster, but not fully
+                    file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34+tmpSave.iSATSize*2,TheConfig->m_iClusterSize),
+                                   TheConfig->m_iClusterSize-34-(tmpSave.iSATSize*2));
+
+        }
+        //now remaining clusters
+        int iRemainingBytes = tmpSave.iSATSize*2+tmpSave.iBytes + 34 - TheConfig->m_iClusterSize;
+        for (int i=0;i<tmpSave.iSATSize-1;i++)
+        {
+            if ( iRemainingBytes > (TheConfig->m_iClusterSize-4)) //not counting headers
             {
-                //extract header
-                if (TheConfig->m_bExtractSysFillZero)
+                //full middle block
+                if (TheConfig->m_bExtractSysAll)
                 {
-                    buf[0]=(char)0;
-                    buf[1]=(char)0;
-                    buf[2]=(char)0;
-                    buf[3]=(char)0;
+                    //extract header
+                    if (TheConfig->m_bExtractSysFillZero)
+                    {
+                        buf[0]=(char)0;
+                        buf[1]=(char)0;
+                        buf[2]=(char)0;
+                        buf[3]=(char)0;
+                    }
+                    else
+                    {
+                        buf[0]=(char)0;
+                        buf[1]=(char)0;
+                        buf[2]=(char)0;
+                        buf[3]=tmpSave.cCounter;
+                    }
+                    file_out.write(buf,4);
+                }
+                //three cases here: full sat cluster, ful data cluster, sat with data in the end
+                //detecting
+                if ((iRemainingBytes - tmpSave.iBytes) >= (TheConfig->m_iClusterSize-4) )
+                {
+                    //full SAT cluster
+                    if (TheConfig->m_bExtractSAT)
+                        file_out.write(HugeRAM.mid(tmpSave.SAT[i]*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
+                }
+                else if (iRemainingBytes <= tmpSave.iBytes)
+                {
+                    //full data cluster
+                    file_out.write(HugeRAM.mid(tmpSave.SAT[i]*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
                 }
                 else
                 {
-                    buf[0]=(char)0;
-                    buf[1]=(char)0;
-                    buf[2]=(char)0;
-                    buf[3]=tmpSave.cCounter;
+                    int iRemainingSAT = iRemainingBytes - tmpSave.iBytes;
+                    //SAT with data in the end
+                    if (TheConfig->m_bExtractSAT) //write as is
+                        file_out.write(HugeRAM.mid(tmpSave.SAT[i]*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
+                    else  //only write data part
+                        file_out.write(HugeRAM.mid(tmpSave.SAT[i]*TheConfig->m_iClusterSize+4+iRemainingSAT,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4-iRemainingSAT);
                 }
-                file_out.write(buf,4);
+                iRemainingBytes -= TheConfig->m_iClusterSize;
+                iRemainingBytes +=4;
             }
-            file_out.write(HugeRAM.mid((tmpSave.SAT[i]*TheConfig->m_iClusterSize)+4,iRemainingBytes),iRemainingBytes);
-            iRemainingBytes = 0;
+            else
+            {
+                //write last cluster
+                //last cluster here is definitely NOT SAT, so no SAT checks here
+                // (this last cluster case is not used when save is only 1 cluster,
+                //  only when save is 2 or more clusters, so don't worry)
+                if (TheConfig->m_bExtractSysAll)
+                {
+                    //extract header
+                    if (TheConfig->m_bExtractSysFillZero)
+                    {
+                        buf[0]=(char)0;
+                        buf[1]=(char)0;
+                        buf[2]=(char)0;
+                        buf[3]=(char)0;
+                    }
+                    else
+                    {
+                        buf[0]=(char)0;
+                        buf[1]=(char)0;
+                        buf[2]=(char)0;
+                        buf[3]=tmpSave.cCounter;
+                    }
+                    file_out.write(buf,4);
+                }
+                file_out.write(HugeRAM.mid((tmpSave.SAT[i]*TheConfig->m_iClusterSize)+4,iRemainingBytes),iRemainingBytes);
+                iRemainingBytes = 0;
+            }
         }
+        file_out.close();
     }
-    file_out.close();
     ui->statusBar->showMessage(QString("File %1 saved").arg(fileName));
 }
 
