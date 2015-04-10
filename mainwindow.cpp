@@ -1081,255 +1081,211 @@ void MainWindow::on_InsertButton_clicked()
     }
 
     //choose file to open
-    QString fileName = QFileDialog::getOpenFileName(this,tr("Load Savegame"), "", NULL);
-    if (fileName.isEmpty()) return; //return if user cancel
-    QFile file_in(fileName);
-    if (!(file_in.open(QIODevice::ReadOnly)))
+    //QStringList fileNames;
+    //QFileDialog dialog(this);
+    //dialog.setFileMode(QFileDialog::AnyFile);
+    //if (dialog.exec())
+    //    fileNames = dialog.selectedFiles();
+    QStringList fileNames = QFileDialog::getOpenFileNames(this,tr("Load Savegame"), "", NULL);
+    if (fileNames.isEmpty()) return; //return if user cancel
+    //QString fileName = QFileDialog::getOpenFileName(this,tr("Load Savegame"), "", NULL);
+    //if (fileName.isEmpty()) return; //return if user cancel
+    //cycle through each save
+    QString fileName;
+    for (int iListIndex=0; iListIndex<fileNames.size(); iListIndex++)
     {
-        QMessageBox msgBox;
-        msgBox.setText(QString("Cannot open save file %s.").arg(fileName));
-        msgBox.exec();
-        return;
-    }
-    //file opened, move on
-
-    //check if we have enough space at the end of file
-    //we don't insert at 0th or 1st cluster - it's signature and always zero
-    //so minimal last used is 1 - when image is empty
-    int iLastUsedCluster=1;
-    for (int i=0; i<SavesList.size(); i++)
-    {
-        for (int j=0; j<SavesList.at(i).iSATSize;j++)
+        fileName = fileNames.at(iListIndex);
+        QFile file_in(fileName);
+        if (!(file_in.open(QIODevice::ReadOnly)))
         {
-            if (SavesList.at(i).SAT[j] > iLastUsedCluster)
-                iLastUsedCluster = SavesList.at(i).SAT[j];
-            if (SavesList.at(i).iStartCluster > iLastUsedCluster)
-                iLastUsedCluster = SavesList.at(i).iStartCluster;
+            QMessageBox msgBox;
+            msgBox.setText(QString("Cannot open save file %s.").arg(fileName));
+            msgBox.exec();
+            return;
         }
-    }
-    //making a brutal check for inserting size:
-    //each ClusterSize-4 requires additional 6 bytes (2 for SAT, 4 for header)
-    //plus 36 additional (34 header, 2 zero-sat-entry)
-    //if that won't fit into remaining clusters, boil out
-    int iClustersRequired = (file_in.size())/(TheConfig->m_iClusterSize-4);
-    int iBytesRequired = file_in.size()+iClustersRequired*6+36;
-    iClustersRequired = iBytesRequired/(TheConfig->m_iClusterSize-4);
-    if ((TheConfig->m_iFileSize/TheConfig->m_iClusterSize - iLastUsedCluster) <= iClustersRequired)
-    {
-        QMessageBox msgBox;
-        msgBox.setText(QString("Not enough space in image to insert save file %1.").arg(fileName));
-        msgBox.exec();
-        return;
-    }
-    tmpSave.iStartCluster = iLastUsedCluster+1;
+        //file opened, move on
 
-    //check done, go on
+        //check if we have enough space at the end of file
+        //we don't insert at 0th or 1st cluster - it's signature and always zero
+        //so minimal last used is 1 - when image is empty
+        int iLastUsedCluster=1;
+        for (int i=0; i<SavesList.size(); i++)
+        {
+            for (int j=0; j<SavesList.at(i).iSATSize;j++)
+            {
+                if (SavesList.at(i).SAT[j] > iLastUsedCluster)
+                    iLastUsedCluster = SavesList.at(i).SAT[j];
+                if (SavesList.at(i).iStartCluster > iLastUsedCluster)
+                    iLastUsedCluster = SavesList.at(i).iStartCluster;
+            }
+        }
+        //making a brutal check for inserting size:
+        //each ClusterSize-4 requires additional 6 bytes (2 for SAT, 4 for header)
+        //plus 36 additional (34 header, 2 zero-sat-entry)
+        //if that won't fit into remaining clusters, boil out
+        int iClustersRequired = (file_in.size())/(TheConfig->m_iClusterSize-4);
+        int iBytesRequired = file_in.size()+iClustersRequired*6+36;
+        iClustersRequired = iBytesRequired/(TheConfig->m_iClusterSize-4);
+        if ((TheConfig->m_iFileSize/TheConfig->m_iClusterSize - iLastUsedCluster) <= iClustersRequired)
+        {
+            QMessageBox msgBox;
+            msgBox.setText(QString("Not enough space in image to insert save file %1.").arg(fileName));
+            msgBox.exec();
+            return;
+        }
+        tmpSave.iStartCluster = iLastUsedCluster+1;
 
-    //trying to get as much info from file as possible
-    if (TheConfig->m_bInsertSys)
-    {
-        file_in.read(buf,4);
-        if (TheConfig->m_bInsertSysUseCounter)
-            tmpSave.cCounter = buf[3];
+        //check done, go on
+
+        //trying to get as much info from file as possible
+        if (TheConfig->m_bInsertSys)
+        {
+            file_in.read(buf,4);
+            if (TheConfig->m_bInsertSysUseCounter)
+                tmpSave.cCounter = buf[3];
+            else
+                tmpSave.cCounter = 0;
+        }
         else
+        {
+            //no counter was provided, making one up
             tmpSave.cCounter = 0;
-    }
-    else
-    {
-        //no counter was provided, making one up
-        tmpSave.cCounter = 0;
-    }
-    if (TheConfig->m_bInsertName)
-    {
-        file_in.read(buf,11);
-        tmpSave.Name = QByteArray(buf,11);
-    }
-    else
-    {
-        //no name was provided, using file name
-        QTextCodec *codec = QTextCodec::codecForName("Shift-JIS");
-        tmpSave.Name = codec->fromUnicode(fileName).left(11);
-    }
-    if (TheConfig->m_bInsertLanguage)
-    {
-        file_in.read(buf,1);
-        tmpSave.iLanguageCode = buf[0];
-    }
-    else
-    {
-        //no language code was provided, making one up
-        tmpSave.iLanguageCode = 0;
-    }
-    if (TheConfig->m_bInsertDescription)
-    {
-        file_in.read(buf,10);
-        tmpSave.Comment = QByteArray(buf,10);
-    }
-    else
-    {
-        //no comment was provided, using holy one
-        buf[0] = 0xBE; //se
-        buf[1] = 0xB6; //g
-        buf[2] = 0xDE; //a
-        buf[3] = 0xBB; //sa
-        buf[4] = 0xC0; //ta
-        buf[5] = 0xB0; //-
-        buf[6] = 0xDD; //n
-        buf[7] = 0x2C; //,
-        buf[8] = 0xBC; //shi
-        buf[9] = 0xDB; //ro
-        tmpSave.Comment = QByteArray(buf,10);
-    }
-    if (TheConfig->m_bInsertDateTime)
-    {
-        file_in.read(buf,4);
-        tmpSave.DateTimeRaw = QByteArray(buf,4);
-        tmpSave.DateTime = GetDateTimeFromRaw4Byte(tmpSave.DateTimeRaw);
-    }
-    else
-    {
-        //no data was provided, using current one
-        tmpSave.DateTime = QDateTime::currentDateTime();
-        //convert that one to raw
-        tmpSave.DateTimeRaw = GetRaw4ByteFromDateTime(tmpSave.DateTime);
-    }
-    if (TheConfig->m_bInsertSize)
-    {
-        file_in.read(buf,4);
-        tmpSave.iBytes = (unsigned char)buf[0]*0x1000000 +
-                (unsigned char)buf[1]*0x10000 +
-                (unsigned char)buf[2]*0x100 +
-                (unsigned char)buf[3];
-    }
-    else
-    {
-        //no file size is provided, counting it
-        //this value is not countable yet, we will count it later, after we'll read SAT
-    }
-    //Druid II specific - skip 2 zeroes after header
-    if (TheConfig->m_InsertMode == InsertDruidII)
-    {
-        file_in.read(buf,2);
-    }
-    //sat
-    if (TheConfig->m_bInsertSAT)
-    {
-        //old SAT is only acceptable if we use the same cluster value
-        //since this could not be the fact, we're simply dumping old SAT
-        //and recalculating a new one later.
-        //but we need to know SAT size in order to find data start, and
-        //to correctly count data size if it is not provided in header
-        tmpSave.iSATSize=1;
-        file_in.read(buf,2);
-        while ( (buf[0]!=0) || (buf[1]!= 0) )
-        {
-             tmpSave.iSATSize++;
-             if ((tmpSave.iSATSize*2+30)%(TheConfig->m_iClusterSize-4) == 0)
-                file_in.read(buf,4);//if moving onto next SAT cluster, skip 4 bytes
-             file_in.read(buf,2);
         }
-        //okay, now that know old SAT size, we can calculate size, if it's not provided
-        int iTmpSize = 0;
-        //if (TheConfig->m_bInsertSize == false)
+        if (TheConfig->m_bInsertName)
         {
-            iTmpSize = file_in.size();
-            if (TheConfig->m_bInsertDateTime) iTmpSize -= 4;
-            if (TheConfig->m_bInsertDescription) iTmpSize -= 10;
-            if (TheConfig->m_bInsertLanguage) iTmpSize -= 1;
-            if (TheConfig->m_bInsertName) iTmpSize -= 11;
-            if (TheConfig->m_bInsertSAT) iTmpSize -= tmpSave.iSATSize*2;
-            if (TheConfig->m_bInsertSize) iTmpSize -= 4;
-            if (TheConfig->m_bInsertSys) iTmpSize -= 4;
-            if (TheConfig->m_bInsertSysAll) iTmpSize -= (tmpSave.iSATSize-1)*4;
+            file_in.read(buf,11);
+            tmpSave.Name = QByteArray(buf,11);
         }
-        //now size stuff
+        else
+        {
+            //no name was provided, using file name
+            QTextCodec *codec = QTextCodec::codecForName("Shift-JIS");
+            tmpSave.Name = codec->fromUnicode(fileName).left(11);
+        }
+        if (TheConfig->m_bInsertLanguage)
+        {
+            file_in.read(buf,1);
+            tmpSave.iLanguageCode = buf[0];
+        }
+        else
+        {
+            //no language code was provided, making one up
+            tmpSave.iLanguageCode = 0;
+        }
+        if (TheConfig->m_bInsertDescription)
+        {
+            file_in.read(buf,10);
+            tmpSave.Comment = QByteArray(buf,10);
+        }
+        else
+        {
+            //no comment was provided, using holy one
+            buf[0] = 0xBE; //se
+            buf[1] = 0xB6; //g
+            buf[2] = 0xDE; //a
+            buf[3] = 0xBB; //sa
+            buf[4] = 0xC0; //ta
+            buf[5] = 0xB0; //-
+            buf[6] = 0xDD; //n
+            buf[7] = 0x2C; //,
+            buf[8] = 0xBC; //shi
+            buf[9] = 0xDB; //ro
+            tmpSave.Comment = QByteArray(buf,10);
+        }
+        if (TheConfig->m_bInsertDateTime)
+        {
+            file_in.read(buf,4);
+            tmpSave.DateTimeRaw = QByteArray(buf,4);
+            tmpSave.DateTime = GetDateTimeFromRaw4Byte(tmpSave.DateTimeRaw);
+        }
+        else
+        {
+            //no data was provided, using current one
+            tmpSave.DateTime = QDateTime::currentDateTime();
+            //convert that one to raw
+            tmpSave.DateTimeRaw = GetRaw4ByteFromDateTime(tmpSave.DateTime);
+        }
         if (TheConfig->m_bInsertSize)
         {
-            //if the size was provided in file as well, do a sanity check
-            if (tmpSave.iBytes != iTmpSize)
+            file_in.read(buf,4);
+            tmpSave.iBytes = (unsigned char)buf[0]*0x1000000 +
+                    (unsigned char)buf[1]*0x10000 +
+                    (unsigned char)buf[2]*0x100 +
+                    (unsigned char)buf[3];
+        }
+        else
+        {
+            //no file size is provided, counting it
+            //this value is not countable yet, we will count it later, after we'll read SAT
+        }
+        //Druid II specific - skip 2 zeroes after header
+        if (TheConfig->m_InsertMode == InsertDruidII)
+        {
+            file_in.read(buf,2);
+        }
+        //sat
+        if (TheConfig->m_bInsertSAT)
+        {
+            //old SAT is only acceptable if we use the same cluster value
+            //since this could not be the fact, we're simply dumping old SAT
+            //and recalculating a new one later.
+            //but we need to know SAT size in order to find data start, and
+            //to correctly count data size if it is not provided in header
+            tmpSave.iSATSize=1;
+            file_in.read(buf,2);
+            while ( (buf[0]!=0) || (buf[1]!= 0) )
             {
-                //sanity check failed, aborting
-                QMessageBox msgBox;
-                msgBox.setText(QString("It looks like this save is corrupted, saved with another features set, or is not a save at all. Continue?"));
-                msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-                if (msgBox.exec() == QMessageBox::Cancel)
-                    return;
+                tmpSave.iSATSize++;
+                if ((tmpSave.iSATSize*2+30)%(TheConfig->m_iClusterSize-4) == 0)
+                    file_in.read(buf,4);//if moving onto next SAT cluster, skip 4 bytes
+                file_in.read(buf,2);
+            }
+            //okay, now that know old SAT size, we can calculate size, if it's not provided
+            int iTmpSize = 0;
+            //if (TheConfig->m_bInsertSize == false)
+            {
+                iTmpSize = file_in.size();
+                if (TheConfig->m_bInsertDateTime) iTmpSize -= 4;
+                if (TheConfig->m_bInsertDescription) iTmpSize -= 10;
+                if (TheConfig->m_bInsertLanguage) iTmpSize -= 1;
+                if (TheConfig->m_bInsertName) iTmpSize -= 11;
+                if (TheConfig->m_bInsertSAT) iTmpSize -= tmpSave.iSATSize*2;
+                if (TheConfig->m_bInsertSize) iTmpSize -= 4;
+                if (TheConfig->m_bInsertSys) iTmpSize -= 4;
+                if (TheConfig->m_bInsertSysAll) iTmpSize -= (tmpSave.iSATSize-1)*4;
+            }
+            //now size stuff
+            if (TheConfig->m_bInsertSize)
+            {
+                //if the size was provided in file as well, do a sanity check
+                if (tmpSave.iBytes != iTmpSize)
+                {
+                    //sanity check failed, aborting
+                    QMessageBox msgBox;
+                    msgBox.setText(QString("It looks like this save is corrupted, saved with another features set, or is not a save at all. Continue?"));
+                    msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+                    if (msgBox.exec() == QMessageBox::Cancel)
+                        return;
+                }
+                else
+                {
+                    //sanity check succseeds, i'm happy!
+                }
             }
             else
             {
-                //sanity check succseeds, i'm happy!
+                //no size was provided, we have no way but to use calculated
+                tmpSave.iBytes = iTmpSize;
             }
-        }
-        else
-        {
-            //no size was provided, we have no way but to use calculated
-            tmpSave.iBytes = iTmpSize;
-        }
-        //calcuating old cluster size, this will be of need when insert_all_sys is on
-        //for 1 cluster only SAT is sinlge 0, so it doesn't matter anyway
-        //for more than 1 cluster : bytes/satsize < 252 for 256, > 254 for 512
-        if (tmpSave.iBytes / tmpSave.iSATSize < 253 )
-            iOldClusterSize = 256;
-        else
-            iOldClusterSize = 512;
-        //okay, we know size, calculate new SAT size
-        tmpSave.iSATSize = 1; //dumping old sat
-        while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
-            tmpSave.iSATSize++;
-        //fill new sat
-        tmpSave.iSATSize++;
-        for (int i=0;i<(tmpSave.iSATSize-1);i++)
-            tmpSave.SAT[i] = tmpSave.iStartCluster+i+1;
-        tmpSave.SAT[tmpSave.iSATSize-1] = 0;
-        //copy SAT to hugeram
-        int iPointer = tmpSave.iStartCluster*TheConfig->m_iClusterSize + 34;
-        for (int i=0;i<tmpSave.iSATSize;i++)
-        {
-            if (iPointer % TheConfig->m_iClusterSize == 0)
-            {
-                HugeRAM[iPointer] = 0;
-                HugeRAM[iPointer+1] = 0;
-                HugeRAM[iPointer+2] = 0;
-                HugeRAM[iPointer+3] = (unsigned char)tmpSave.cCounter;
-                iPointer+=4;
-            }
-            HugeRAM[iPointer] = (char) ( tmpSave.SAT[i] / 0x100 );
-            HugeRAM[iPointer+1] = (char) ( tmpSave.SAT[i] % 0x100 );
-            iPointer+=2;
-        }
-        //copy save itself to hugeram
-        for (int i=0; i< tmpSave.iBytes; i++)
-        {
-            if (iPointer % TheConfig->m_iClusterSize == 0)
-            {
-                HugeRAM[iPointer] = 0;
-                HugeRAM[iPointer+1] = 0;
-                HugeRAM[iPointer+2] = 0;
-                HugeRAM[iPointer+3] = (unsigned char)tmpSave.cCounter;
-                iPointer+=4;
-            }
-            if ((TheConfig->m_bInsertSysAll) && (file_in.pos() % iOldClusterSize == 0) )
-            {
-                file_in.read(buf,4);
-            }
-            file_in.read(buf,1);
-            HugeRAM[iPointer] = buf[0];
-            iPointer++;
-        }
-        //we're done the case with integrated sat!
-        //now only check & write header
-    }
-    else
-    {
-        //old SAT is not provided, that saves us some pain, we know data is right ahead
-        //but if the data size was not provided as well, we must count data size manually
-        //and we cannot calculate old clusters' size
-        //now size stuff
-        if (TheConfig->m_bInsertSize)
-        {
-            //size provided, that's good, we don't need to make any specific actions
-            //calculate new SAT size
-            tmpSave.iSATSize = 1;
+            //calcuating old cluster size, this will be of need when insert_all_sys is on
+            //for 1 cluster only SAT is sinlge 0, so it doesn't matter anyway
+            //for more than 1 cluster : bytes/satsize < 252 for 256, > 254 for 512
+            if (tmpSave.iBytes / tmpSave.iSATSize < 253 )
+                iOldClusterSize = 256;
+            else
+                iOldClusterSize = 512;
+            //okay, we know size, calculate new SAT size
+            tmpSave.iSATSize = 1; //dumping old sat
             while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
                 tmpSave.iSATSize++;
             //fill new sat
@@ -1364,50 +1320,110 @@ void MainWindow::on_InsertButton_clicked()
                     HugeRAM[iPointer+3] = (unsigned char)tmpSave.cCounter;
                     iPointer+=4;
                 }
+                if ((TheConfig->m_bInsertSysAll) && (file_in.pos() % iOldClusterSize == 0) )
+                {
+                    file_in.read(buf,4);
+                }
                 file_in.read(buf,1);
                 HugeRAM[iPointer] = buf[0];
                 iPointer++;
             }
-            //we're done the case with no sat case!
+            //we're done the case with integrated sat!
             //now only check & write header
         }
-    }
+        else
+        {
+            //old SAT is not provided, that saves us some pain, we know data is right ahead
+            //but if the data size was not provided as well, we must count data size manually
+            //and we cannot calculate old clusters' size
+            //now size stuff
+            if (TheConfig->m_bInsertSize)
+            {
+                //size provided, that's good, we don't need to make any specific actions
+                //calculate new SAT size
+                tmpSave.iSATSize = 1;
+                while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
+                    tmpSave.iSATSize++;
+                //fill new sat
+                tmpSave.iSATSize++;
+                for (int i=0;i<(tmpSave.iSATSize-1);i++)
+                    tmpSave.SAT[i] = tmpSave.iStartCluster+i+1;
+                tmpSave.SAT[tmpSave.iSATSize-1] = 0;
+                //copy SAT to hugeram
+                int iPointer = tmpSave.iStartCluster*TheConfig->m_iClusterSize + 34;
+                for (int i=0;i<tmpSave.iSATSize;i++)
+                {
+                    if (iPointer % TheConfig->m_iClusterSize == 0)
+                    {
+                        HugeRAM[iPointer] = 0;
+                        HugeRAM[iPointer+1] = 0;
+                        HugeRAM[iPointer+2] = 0;
+                        HugeRAM[iPointer+3] = (unsigned char)tmpSave.cCounter;
+                        iPointer+=4;
+                    }
+                    HugeRAM[iPointer] = (char) ( tmpSave.SAT[i] / 0x100 );
+                    HugeRAM[iPointer+1] = (char) ( tmpSave.SAT[i] % 0x100 );
+                    iPointer+=2;
+                }
+                //copy save itself to hugeram
+                for (int i=0; i< tmpSave.iBytes; i++)
+                {
+                    if (iPointer % TheConfig->m_iClusterSize == 0)
+                    {
+                        HugeRAM[iPointer] = 0;
+                        HugeRAM[iPointer+1] = 0;
+                        HugeRAM[iPointer+2] = 0;
+                        HugeRAM[iPointer+3] = (unsigned char)tmpSave.cCounter;
+                        iPointer+=4;
+                    }
+                    file_in.read(buf,1);
+                    HugeRAM[iPointer] = buf[0];
+                    iPointer++;
+                }
+                //we're done the case with no sat case!
+                //now only check & write header
+            }
+        }
 
-    //all possible data gathered, what is not gathered is guessed or generated
-    //save and sat already is injected into hugeram before confirmtion
-    // it is stupidly wrong, but it won't change anything unless header is written
+        //all possible data gathered, what is not gathered is guessed or generated
+        //save and sat already is injected into hugeram before confirmtion
+        // it is stupidly wrong, but it won't change anything unless header is written
 
-    //open form to confirm data we're inserting
-    EnterSaveDetailsDialog checkDialog(&tmpSave);
-    if (checkDialog.exec() == QDialog::Rejected) return;
+        //if it's single file mode, open form to confirm data we're inserting
+        if (fileNames.size() == 1)
+        {
+            EnterSaveDetailsDialog checkDialog(&tmpSave);
+            if (checkDialog.exec() == QDialog::Rejected) return;
+        }
 
-    //write header
-    if (TheConfig->m_bInsertSysUseCounter)
-    {
-        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0x80;
-        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1] = 0x00;
-        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2] = 0x00;
-        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3] = tmpSave.cCounter;
-    }
-    else
-    {
-        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0x80;
-        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1] = 0x00;
-        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2] = 0x00;
-        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3] = 0x00;//what counter value should we use here?
-    }
-    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+4,11,tmpSave.Name.left(11));
-    buf[0] = tmpSave.iLanguageCode;
-    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+15,1,QByteArray(buf,1));
-    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+16,10,tmpSave.Comment.left(10));
-    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+26,4,tmpSave.DateTimeRaw.left(4));
-    buf[0]= (unsigned char)(tmpSave.iBytes/0x1000000);
-    buf[1] = (unsigned char)((tmpSave.iBytes%0x1000000)/0x10000);
-    buf[2] = (unsigned char)((tmpSave.iBytes%0x10000)/0x100);
-    buf[3] = (unsigned char)(tmpSave.iBytes % 0x100);
-    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+30,4,QByteArray(buf,4));
-
-    ParseHugeRAM();
+        //write header
+        if (TheConfig->m_bInsertSysUseCounter)
+        {
+            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0x80;
+            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1] = 0x00;
+            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2] = 0x00;
+            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3] = tmpSave.cCounter;
+        }
+        else
+        {
+            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0x80;
+            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1] = 0x00;
+            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2] = 0x00;
+            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3] = 0x00;//what counter value should we use here?
+        }
+        HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+4,11,tmpSave.Name.left(11));
+        buf[0] = tmpSave.iLanguageCode;
+        HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+15,1,QByteArray(buf,1));
+        HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+16,10,tmpSave.Comment.left(10));
+        HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+26,4,tmpSave.DateTimeRaw.left(4));
+        buf[0]= (unsigned char)(tmpSave.iBytes/0x1000000);
+        buf[1] = (unsigned char)((tmpSave.iBytes%0x1000000)/0x10000);
+        buf[2] = (unsigned char)((tmpSave.iBytes%0x10000)/0x100);
+        buf[3] = (unsigned char)(tmpSave.iBytes % 0x100);
+        HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+30,4,QByteArray(buf,4));
+        file_in.close();
+        ParseHugeRAM();
+    }//cycle through all saves
 
     ui->statusBar->showMessage(QString("Save from file %1 inserted").arg(fileName));
 }
@@ -1494,6 +1510,13 @@ void MainWindow::on_NewButton_clicked()
     //NewSettings.iIOCustomClusterSize=TheConfig->m_iClusterSize;
     NewDialog MyLittleNewDialog(&NewSettings);
     if (MyLittleNewDialog.exec() == QDialog::Rejected) return;
+    if (NewSettings.iImageSize*1024 < TheConfig->m_iClusterSize*3)
+    {
+        QMessageBox msgBox;
+        msgBox.setText(QString("Image size is too small. Try a bigger one please. "));
+        msgBox.exec();
+        return;
+    }
     SavesList.clear();
     HugeRAM.clear();
     HugeRAM.fill((char)0,NewSettings.iImageSize*1024);
