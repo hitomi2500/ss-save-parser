@@ -1424,23 +1424,29 @@ void MainWindow::on_DeleteButton_clicked()
         msgBox.exec();
         return;
     }
-    tmpSave = SavesList.at(ui->tableWidget->currentRow());
-    switch (TheConfig->m_DeleteMode)
+    //get selected save or save range
+    int iStart = ui->tableWidget->selectedRanges().at(0).topRow();
+    int iEnd = ui->tableWidget->selectedRanges().at(0).bottomRow();
+    for (int iSaveIndex = iStart; iSaveIndex<=iEnd; iSaveIndex++)
     {
-    case DeleteSingleSys:
-        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0;
-        break;
-    case DeleteAllSys:
-        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0;
-        for (int i=0; i<tmpSave.iSATSize-1;i++)
-            HugeRAM[tmpSave.SAT[i]*TheConfig->m_iClusterSize] = 0;
-        break;
-    case DeleteFull:
-        QByteArray empty = QByteArray(TheConfig->m_iClusterSize,(char)0);
-        HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize,TheConfig->m_iClusterSize,empty);
-        for (int i=0; i<tmpSave.iSATSize-1;i++)
-            HugeRAM.replace(tmpSave.SAT[i]*TheConfig->m_iClusterSize,TheConfig->m_iClusterSize,empty);
-        break;
+        tmpSave = SavesList.at(iSaveIndex);
+        switch (TheConfig->m_DeleteMode)
+        {
+        case DeleteSingleSys:
+            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0;
+            break;
+        case DeleteAllSys:
+            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0;
+            for (int i=0; i<tmpSave.iSATSize-1;i++)
+                HugeRAM[tmpSave.SAT[i]*TheConfig->m_iClusterSize] = 0;
+            break;
+        case DeleteFull:
+            QByteArray empty = QByteArray(TheConfig->m_iClusterSize,(char)0);
+            HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize,TheConfig->m_iClusterSize,empty);
+            for (int i=0; i<tmpSave.iSATSize-1;i++)
+                HugeRAM.replace(tmpSave.SAT[i]*TheConfig->m_iClusterSize,TheConfig->m_iClusterSize,empty);
+            break;
+        }
     }
     ParseHugeRAM();
     ui->statusBar->showMessage(QString("Save deleted"));
