@@ -24,16 +24,17 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     TheConfig = new Config;
     SetupWin = new SetupWindow(this);
-    ui->tableWidget->setColumnCount(8);
+    ui->tableWidget->setColumnCount(9);
     ui->tableWidget->setRowCount(0);
-    sList.append("Name");
-    sList.append("Comment");
-    sList.append("Lng. code");
-    sList.append("Date");
-    sList.append("Bytes");
-    sList.append("Blocks");
-    sList.append("Clusters");
-    sList.append("Counter");
+    sList.append(tr("Name"));
+    sList.append(tr("Comment"));
+    sList.append(tr("Lng. code"));
+    sList.append(tr("Date"));
+    sList.append(tr("Bytes"));
+    sList.append(tr("Blocks"));
+    sList.append(tr("1st custer"));
+    sList.append(tr("Clusters"));
+    sList.append(tr("Counter"));
     ui->tableWidget->setHorizontalHeaderLabels(sList);
     ui->tableWidget->resizeColumnsToContents();
     ui->tableWidget->resizeRowsToContents();
@@ -111,14 +112,15 @@ void MainWindow::ParseHugeRAM()
     }
     //update header lables according to sort order
     sList.clear();
-    sList.append("Name");
-    sList.append("Comment");
-    sList.append("Lng. code");
-    sList.append("Date");
-    sList.append("Bytes");
-    sList.append("Blocks");
-    sList.append("Clusters");
-    sList.append("Counter");
+    sList.append(tr("Name"));
+    sList.append(tr("Comment"));
+    sList.append(tr("Lng. code"));
+    sList.append(tr("Date"));
+    sList.append(tr("Bytes"));
+    sList.append(tr("Blocks"));
+    sList.append(tr("1st cluster"));
+    sList.append(tr("Clusters"));
+    sList.append(tr("Counter"));
 
     if (SortDir == SORT_ASCENDING)
     {
@@ -148,7 +150,7 @@ void MainWindow::ParseHugeRAM()
                     if (SavesList.at(i).Comment < SavesList.at(j).Comment ) SavesList.swap(i,j);
                     break;
                 case 2:
-                    if (SavesList.at(i).iLanguageCode < SavesList.at(j).iLanguageCode ) SavesList.swap(i,j);
+                    if (SavesList.at(i).cLanguageCode < SavesList.at(j).cLanguageCode ) SavesList.swap(i,j);
                     break;
                 case 3:
                     if (SavesList.at(i).DateTime < SavesList.at(j).DateTime ) SavesList.swap(i,j);
@@ -160,9 +162,12 @@ void MainWindow::ParseHugeRAM()
                     if (SavesList.at(i).iBlocks < SavesList.at(j).iBlocks ) SavesList.swap(i,j);
                     break;
                 case 6:
-                    if (SavesList.at(i).iSATSize < SavesList.at(j).iSATSize ) SavesList.swap(i,j);
+                    if (SavesList.at(i).iStartCluster < SavesList.at(j).iStartCluster ) SavesList.swap(i,j);
                     break;
                 case 7:
+                    if (SavesList.at(i).iSATSize < SavesList.at(j).iSATSize ) SavesList.swap(i,j);
+                    break;
+                case 8:
                     if (SavesList.at(i).cCounter < SavesList.at(j).cCounter ) SavesList.swap(i,j);
                     break;
                 }
@@ -178,7 +183,7 @@ void MainWindow::ParseHugeRAM()
                     if (SavesList.at(i).Comment > SavesList.at(j).Comment ) SavesList.swap(i,j);
                     break;
                 case 2:
-                    if (SavesList.at(i).iLanguageCode > SavesList.at(j).iLanguageCode ) SavesList.swap(i,j);
+                    if (SavesList.at(i).cLanguageCode > SavesList.at(j).cLanguageCode ) SavesList.swap(i,j);
                     break;
                 case 3:
                     if (SavesList.at(i).DateTime > SavesList.at(j).DateTime ) SavesList.swap(i,j);
@@ -190,9 +195,12 @@ void MainWindow::ParseHugeRAM()
                     if (SavesList.at(i).iBlocks > SavesList.at(j).iBlocks ) SavesList.swap(i,j);
                     break;
                 case 6:
-                    if (SavesList.at(i).iSATSize > SavesList.at(j).iSATSize ) SavesList.swap(i,j);
+                    if (SavesList.at(i).iStartCluster > SavesList.at(j).iStartCluster ) SavesList.swap(i,j);
                     break;
                 case 7:
+                    if (SavesList.at(i).iSATSize > SavesList.at(j).iSATSize ) SavesList.swap(i,j);
+                    break;
+                case 8:
                     if (SavesList.at(i).cCounter > SavesList.at(j).cCounter ) SavesList.swap(i,j);
                     break;
                 }
@@ -222,15 +230,16 @@ void MainWindow::ParseHugeRAM()
         ui->tableWidget->insertRow(i);
         Items[0] = codec->toUnicode(tmpSave.Name.replace((char)0,(char)32));
         Items[1] = codec->toUnicode(tmpSave.Comment.replace((char)0,(char)32));
-        Items[2] = QString("%1").arg(tmpSave.iLanguageCode);
+        Items[2] = QString("%1").arg(tmpSave.cLanguageCode);
         Items[3] = tmpSave.DateTime.toString("dd-MM-yyyy hh:mm");
         Items[4] = QString("%1").arg(tmpSave.iBytes);
         Items[5] = QString("%1").arg(tmpSave.iBlocks);
+        Items[6] = QString("%1").arg(tmpSave.iStartCluster);
         if (tmpSave.iSATSize > 1)
-            Items[6] = QString("%1(%2...%3)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster).arg(tmpSave.SAT[tmpSave.iSATSize-2]);
+            Items[7] = QString("%1(%2...%3)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster).arg(tmpSave.SAT[tmpSave.iSATSize-2]);
         else
-            Items[6] = QString("%1(%2)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster);
-        Items[7] = QString("%1").arg((int)tmpSave.cCounter);
+            Items[7] = QString("%1(%2)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster);
+        Items[8] = QString("%1").arg((int)tmpSave.cCounter);
         if (TheConfig->m_bShowHexValues)
         {
             //add hexes
@@ -238,15 +247,15 @@ void MainWindow::ParseHugeRAM()
             for (j=0;j<8;j++) Items[j].append(QChar::LineFeed);
             for (j=0;j<11;j++) Items[0].append(QString("%1 ").arg((unsigned char)tmpSave.Name[j],2,16,QChar('0')).toUpper());
             for (j=0;j<10;j++) Items[1].append(QString("%1 ").arg((unsigned char)tmpSave.Comment[j],2,16,QChar('0')).toUpper());
-            Items[2].append(QString("%1 ").arg((unsigned char)tmpSave.iLanguageCode,2,16,QChar('0')).toUpper());
+            Items[2].append(QString("%1 ").arg(tmpSave.cLanguageCode,2,16,QChar('0')).toUpper());
             for (j=0;j<4;j++) Items[3].append(QString("%1 ").arg((unsigned char)tmpSave.DateTimeRaw[j],2,16,QChar('0')).toUpper());
             Items[4].append(QString("%1 ").arg((unsigned char)tmpSave.iBytes/0x1000000,2,16,QChar('0')).toUpper());
             Items[4].append(QString("%1 ").arg((unsigned char)(tmpSave.iBytes/0x10000)%0x100,2,16,QChar('0')).toUpper());
             Items[4].append(QString("%1 ").arg((unsigned char)(tmpSave.iBytes/0x100)%0x100,2,16,QChar('0')).toUpper());
             Items[4].append(QString("%1 ").arg((unsigned char)tmpSave.iBytes%0x100,2,16,QChar('0')).toUpper());
-            Items[7].append(QString("%1 ").arg((unsigned char)tmpSave.cCounter,2,16,QChar('0')).toUpper());
+            Items[8].append(QString("%1 ").arg((unsigned char)tmpSave.cCounter,2,16,QChar('0')).toUpper());
         }
-        for (j=0;j<8;j++)
+        for (j=0;j<9;j++)
         {
             newItem = new QTableWidgetItem(Items[j]);
             ui->tableWidget->setItem(i,j,newItem);
@@ -288,7 +297,7 @@ void MainWindow::on_LoadButton_clicked()
     if (!(file_in.open(QIODevice::ReadOnly)))
     {
         QMessageBox msgBox;
-        msgBox.setText(QString("Cannot open image file %s.").arg(fileName));
+        msgBox.setText(tr("Cannot open image file %s.").arg(fileName));
         msgBox.exec();
         return;
     }
@@ -304,7 +313,7 @@ void MainWindow::on_LoadButton_clicked()
     {
         //some boot image detected
         QMessageBox msgBox;
-        msgBox.setText(QString("I see what you did here. It is an image of some kind of a bootable cartridge, right? I can TRY to import (only import!) some saves off this image, but this is extremely experimental, so no promises. And you know what? I want that image. Contact me via github project ss-backup-parser. So, let us try then?"));
+        msgBox.setText(tr("I see what you did here. It is an image of some kind of a bootable cartridge, right? I can TRY to import (only import!) some saves off this image, but this is extremely experimental, so no promises. And you know what? I want that image. Contact me via github project ss-backup-parser. So, let us try then?"));
         msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
         if (msgBox.exec() != QMessageBox::Cancel)
         {
@@ -379,7 +388,7 @@ void MainWindow::on_LoadButton_clicked()
                     {
                         //decompression result is different
                         QMessageBox msgBox;
-                        msgBox.setText(QString("Not enough space in image to insert ")+QString(tmpSave.Name)+QString(" and possibly some other saves. Please retry with a bigger image size."));
+                        msgBox.setText(tr("Not enough space in image to insert ")+QString(tmpSave.Name)+tr(" and possibly some other saves. Please retry with a bigger image size."));
                         msgBox.exec();
                         //enable name sorting
                         iSortIndex = 0;
@@ -477,7 +486,7 @@ void MainWindow::on_LoadButton_clicked()
                     {
                         //decompression result is different
                         QMessageBox msgBox;
-                        msgBox.setText(QString("Decompression error for ")+QString(tmpSave.Name)+QString(". Size should be %2, but decompressed into %3").arg(tmpSave.iBytes).arg(iDecompressedSize));
+                        msgBox.setText(tr("Decompression error for ")+QString(tmpSave.Name)+tr(". Size should be %2, but decompressed into %3").arg(tmpSave.iBytes).arg(iDecompressedSize));
                         msgBox.exec();
                     }
                     int iPos = file_in.pos() % 256;
@@ -516,7 +525,7 @@ void MainWindow::on_LoadButton_clicked()
         {
             //some boot image detected
             QMessageBox msgBox;
-            msgBox.setText(QString("I see what you did here. It is an image of some kind of a bootable cartridge, right? I can TRY to import (only import!) some saves off this image, but this is extremely experimental, so no promises. And you know what? I want that image. Contact me via github project ss-backup-parser. So, let us try then?"));
+            msgBox.setText(tr("I see what you did here. It is an image of some kind of a bootable cartridge, right? I can TRY to import (only import!) some saves off this image, but this is extremely experimental, so no promises. And you know what? I want that image. Contact me via github project ss-backup-parser. So, let us try then?"));
             msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
             if (msgBox.exec() != QMessageBox::Cancel)
             {
@@ -534,7 +543,7 @@ void MainWindow::on_LoadButton_clicked()
         else
         {
             QMessageBox msgBox;
-            msgBox.setText(QString("Cannot detect signature in this file. Futher processing highly relies on that header, so i cannot proceed. If it's datel/AR/whatever image, i cannot proceed it. Yet."));
+            msgBox.setText(tr("Cannot detect signature in this file. Futher processing highly relies on that header, so i cannot proceed. If it's datel/AR/whatever image, i cannot proceed it. Yet."));
             msgBox.exec();
             file_in.close();
             return;
@@ -622,7 +631,7 @@ void MainWindow::on_LoadButton_clicked()
             HugeRAM[i] = cbuf[1];
         }
     }
-    ui->statusBar->showMessage(QString("File loaded, size %1, cluster size is %2 bytes.").arg(TheConfig->m_iFileSize).arg(TheConfig->m_iClusterSize));
+    ui->statusBar->showMessage(tr("File loaded, size %1, cluster size is %2 bytes.").arg(TheConfig->m_iFileSize).arg(TheConfig->m_iClusterSize));
     file_in.close();
     //enable name sorting
     iSortIndex = 0;
@@ -650,7 +659,7 @@ void MainWindow::on_SaveButton_clicked()
     if (!(file_out.open(QIODevice::WriteOnly)))
     {
         QMessageBox msgBox;
-        msgBox.setText(QString("Cannot open image file %s.").arg(fileName));
+        msgBox.setText(tr("Cannot open image file %s.").arg(fileName));
         msgBox.exec();
         return;
     }
@@ -734,7 +743,7 @@ void MainWindow::on_RepackButton_clicked()
         if (HugeRAM2.size()+34+iNewSATSize*6+SavesList.at(iSave).iBytes > TheConfig->m_iFileSize)
         {
             QMessageBox msgBox;
-            msgBox.setText(QString("Save %1 doesn't fit and is removed").arg(QString(SavesList.at(iSave).Name)));
+            msgBox.setText(tr("Save %1 doesn't fit and is removed").arg(QString(SavesList.at(iSave).Name)));
             msgBox.exec();
         }
         //okay, simply using next available sectors for SAT
@@ -814,7 +823,7 @@ void MainWindow::on_RepackButton_clicked()
     TheConfig->SaveToRegistry();
     //reparse all the saves
     ParseHugeRAM();
-    ui->statusBar->showMessage(QString("Repacked to cluster size %1 bytes").arg(TheConfig->m_iClusterSize));
+    ui->statusBar->showMessage(tr("Repacked to cluster size %1 bytes").arg(TheConfig->m_iClusterSize));
 }
 
 void MainWindow::on_ExtractButton_clicked()
@@ -839,7 +848,7 @@ void MainWindow::on_ExtractButton_clicked()
          TheConfig->m_bExtractSysAll )
     {
         QMessageBox msgBox;
-        msgBox.setText(QString("The combination you set (no SAT, no size, all headers) is extractable, but not reliably insertable. There are possible workarounds, but i'm not into implementing them. Not extracting."));
+        msgBox.setText(tr("The combination you set (no SAT, no size, all headers) is extractable, but not reliably insertable. There are possible workarounds, but i'm not into implementing them. Not extracting."));
         msgBox.exec();
         return;
     }
@@ -851,13 +860,13 @@ void MainWindow::on_ExtractButton_clicked()
     {
         //choose single file to save
         tmpSave = SavesList.at(iStart);//ui->tableWidget->currentRow());
-        fileName = QFileDialog::getSaveFileName(this,tr("Save Savegame"), "", NULL);
+        fileName = QFileDialog::getSaveFileName(this,tr("Save Savegame"), QString(tmpSave.Name), NULL);
         if (fileName.isEmpty()) return; //return if user cancel
         file_out.setFileName(fileName);
         if (!(file_out.open(QIODevice::WriteOnly)))
         {
             QMessageBox msgBox;
-            msgBox.setText(QString("Cannot open save file %s.").arg(fileName));
+            msgBox.setText(tr("Cannot open save file %s.").arg(fileName));
             msgBox.exec();
             return;
         }
@@ -877,7 +886,7 @@ void MainWindow::on_ExtractButton_clicked()
     if ( (TheConfig->m_bExtractSAT==false) && ( (TheConfig->m_bExtractSys) || (TheConfig->m_bExtractSysAll) ) )
     {
         QMessageBox msgBox;
-        msgBox.setText(QString("You're trying to do something strange saving headers and NOT saving SAT. This is possible setup all right, it will be extracted and inserted successfully, but data inside looks stupidly unrelated. I will continue, but you've been warned."));
+        msgBox.setText(tr("You're trying to do something strange saving headers and NOT saving SAT. This is possible setup all right, it will be extracted and inserted successfully, but data inside looks stupidly unrelated. I will continue, but you've been warned."));
         msgBox.exec();
     }
 
@@ -893,7 +902,7 @@ void MainWindow::on_ExtractButton_clicked()
             if (!(file_out.open(QIODevice::WriteOnly)))
             {
                 QMessageBox msgBox;
-                msgBox.setText(QString("Cannot open save file %s.").arg(fileName));
+                msgBox.setText(tr("Cannot open save file %s.").arg(fileName));
                 msgBox.exec();
                 return;
             }
@@ -923,7 +932,7 @@ void MainWindow::on_ExtractButton_clicked()
         }
         if (TheConfig->m_bExtractLanguage)
         {
-            buf[0]=(char)tmpSave.iLanguageCode;
+            buf[0]=(char)tmpSave.cLanguageCode;
             file_out.write(buf,1);
         }
         if (TheConfig->m_bExtractDescription)
@@ -1051,7 +1060,7 @@ void MainWindow::on_ExtractButton_clicked()
         }
         file_out.close();
     }
-    ui->statusBar->showMessage(QString("File %1 saved").arg(fileName));
+    ui->statusBar->showMessage(tr("File %1 saved").arg(fileName));
 }
 
 
@@ -1059,9 +1068,16 @@ void MainWindow::on_InsertButton_clicked()
 {
     //insert save
     char buf[256];
+    QList<QByteArray> SysHeadersList;
+    QByteArray SysHeader1st;
     SaveType tmpSave;
     int iOldClusterSize;
     TheConfig->LoadFromRegistry();
+    SysHeadersList.clear();
+    SysHeader1st.clear();
+    bool bOverwriteDupes = false;
+    bool bKeepDupes = true;
+    bool bFirstDupeFound = false;
 
     //first we must check if file is recoverable after all
     //since some configs are not
@@ -1075,21 +1091,14 @@ void MainWindow::on_InsertButton_clicked()
          TheConfig->m_bInsertSysAll )
     {
         QMessageBox msgBox;
-        msgBox.setText(QString("The combination you set (no SAT, no size, all headers) is not reliably recoverable. There are possible workarounds, but i'm not into implementing them. Not inserting."));
+        msgBox.setText(tr("The combination you set (no SAT, no size, all headers) is not reliably recoverable. There are possible workarounds, but i'm not into implementing them. Not inserting."));
         msgBox.exec();
         return;
     }
 
-    //choose file to open
-    //QStringList fileNames;
-    //QFileDialog dialog(this);
-    //dialog.setFileMode(QFileDialog::AnyFile);
-    //if (dialog.exec())
-    //    fileNames = dialog.selectedFiles();
+    //choose file(s) to open
     QStringList fileNames = QFileDialog::getOpenFileNames(this,tr("Load Savegame"), "", NULL);
     if (fileNames.isEmpty()) return; //return if user cancel
-    //QString fileName = QFileDialog::getOpenFileName(this,tr("Load Savegame"), "", NULL);
-    //if (fileName.isEmpty()) return; //return if user cancel
     //cycle through each save
     QString fileName;
     for (int iListIndex=0; iListIndex<fileNames.size(); iListIndex++)
@@ -1099,14 +1108,14 @@ void MainWindow::on_InsertButton_clicked()
         if (!(file_in.open(QIODevice::ReadOnly)))
         {
             QMessageBox msgBox;
-            msgBox.setText(QString("Cannot open save file %s.").arg(fileName));
+            msgBox.setText(tr("Cannot open save file %s.").arg(fileName));
             msgBox.exec();
             return;
         }
         //file opened, move on
 
         //check if we have enough space at the end of file
-        //we don't insert at 0th or 1st cluster - it's signature and always zero
+        //we don't insert at 0th or 1st cluster - they're signature cluster and always zero cluster
         //so minimal last used is 1 - when image is empty
         int iLastUsedCluster=1;
         for (int i=0; i<SavesList.size(); i++)
@@ -1129,7 +1138,7 @@ void MainWindow::on_InsertButton_clicked()
         if ((TheConfig->m_iFileSize/TheConfig->m_iClusterSize - iLastUsedCluster) <= iClustersRequired)
         {
             QMessageBox msgBox;
-            msgBox.setText(QString("Not enough space in image to insert save file %1.").arg(fileName));
+            msgBox.setText(tr("Not enough space in image to insert save file %1.").arg(fileName));
             msgBox.exec();
             return;
         }
@@ -1141,6 +1150,7 @@ void MainWindow::on_InsertButton_clicked()
         if (TheConfig->m_bInsertSys)
         {
             file_in.read(buf,4);
+            SysHeader1st.append(QByteArray(buf,4));
             if (TheConfig->m_bInsertSysUseCounter)
                 tmpSave.cCounter = buf[3];
             else
@@ -1165,12 +1175,12 @@ void MainWindow::on_InsertButton_clicked()
         if (TheConfig->m_bInsertLanguage)
         {
             file_in.read(buf,1);
-            tmpSave.iLanguageCode = buf[0];
+            tmpSave.cLanguageCode = (unsigned char) buf[0];
         }
         else
         {
             //no language code was provided, making one up
-            tmpSave.iLanguageCode = 0;
+            tmpSave.cLanguageCode = 0;
         }
         if (TheConfig->m_bInsertDescription)
         {
@@ -1200,7 +1210,7 @@ void MainWindow::on_InsertButton_clicked()
         }
         else
         {
-            //no data was provided, using current one
+            //no date was provided, using current one
             tmpSave.DateTime = QDateTime::currentDateTime();
             //convert that one to raw
             tmpSave.DateTimeRaw = GetRaw4ByteFromDateTime(tmpSave.DateTime);
@@ -1236,8 +1246,11 @@ void MainWindow::on_InsertButton_clicked()
             while ( (buf[0]!=0) || (buf[1]!= 0) )
             {
                 tmpSave.iSATSize++;
-                if ((tmpSave.iSATSize*2+30)%(TheConfig->m_iClusterSize-4) == 0)
+                if ( (TheConfig->m_bInsertSysAll) && ((tmpSave.iSATSize*2+30)%(TheConfig->m_iClusterSize-4) == 0) )
+                {
                     file_in.read(buf,4);//if moving onto next SAT cluster, skip 4 bytes
+                    SysHeadersList.append(QByteArray(buf,4));
+                }
                 file_in.read(buf,2);
             }
             //okay, now that know old SAT size, we can calculate size, if it's not provided
@@ -1262,7 +1275,7 @@ void MainWindow::on_InsertButton_clicked()
                 {
                     //sanity check failed, aborting
                     QMessageBox msgBox;
-                    msgBox.setText(QString("It looks like this save is corrupted, saved with another features set, or is not a save at all. Continue?"));
+                    msgBox.setText(tr("It looks like this save is corrupted, saved with another features set, or is not a save at all. Continue?"));
                     msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
                     if (msgBox.exec() == QMessageBox::Cancel)
                         return;
@@ -1302,7 +1315,7 @@ void MainWindow::on_InsertButton_clicked()
                     HugeRAM[iPointer] = 0;
                     HugeRAM[iPointer+1] = 0;
                     HugeRAM[iPointer+2] = 0;
-                    HugeRAM[iPointer+3] = (unsigned char)tmpSave.cCounter;
+                    HugeRAM[iPointer+3] = tmpSave.cCounter;
                     iPointer+=4;
                 }
                 HugeRAM[iPointer] = (char) ( tmpSave.SAT[i] / 0x100 );
@@ -1317,12 +1330,13 @@ void MainWindow::on_InsertButton_clicked()
                     HugeRAM[iPointer] = 0;
                     HugeRAM[iPointer+1] = 0;
                     HugeRAM[iPointer+2] = 0;
-                    HugeRAM[iPointer+3] = (unsigned char)tmpSave.cCounter;
+                    HugeRAM[iPointer+3] = tmpSave.cCounter;
                     iPointer+=4;
                 }
                 if ((TheConfig->m_bInsertSysAll) && (file_in.pos() % iOldClusterSize == 0) )
                 {
                     file_in.read(buf,4);
+                    SysHeadersList.append(QByteArray(buf,4));
                 }
                 file_in.read(buf,1);
                 HugeRAM[iPointer] = buf[0];
@@ -1335,7 +1349,8 @@ void MainWindow::on_InsertButton_clicked()
         {
             //old SAT is not provided, that saves us some pain, we know data is right ahead
             //but if the data size was not provided as well, we must count data size manually
-            //and we cannot calculate old clusters' size
+            //and since we cannot calculate old clusters' size, we boiled out before in
+            //the case sys headers were inserted
             //now size stuff
             if (TheConfig->m_bInsertSize)
             {
@@ -1358,7 +1373,7 @@ void MainWindow::on_InsertButton_clicked()
                         HugeRAM[iPointer] = 0;
                         HugeRAM[iPointer+1] = 0;
                         HugeRAM[iPointer+2] = 0;
-                        HugeRAM[iPointer+3] = (unsigned char)tmpSave.cCounter;
+                        HugeRAM[iPointer+3] = tmpSave.cCounter;
                         iPointer+=4;
                     }
                     HugeRAM[iPointer] = (char) ( tmpSave.SAT[i] / 0x100 );
@@ -1373,7 +1388,7 @@ void MainWindow::on_InsertButton_clicked()
                         HugeRAM[iPointer] = 0;
                         HugeRAM[iPointer+1] = 0;
                         HugeRAM[iPointer+2] = 0;
-                        HugeRAM[iPointer+3] = (unsigned char)tmpSave.cCounter;
+                        HugeRAM[iPointer+3] = tmpSave.cCounter;
                         iPointer+=4;
                     }
                     file_in.read(buf,1);
@@ -1386,7 +1401,7 @@ void MainWindow::on_InsertButton_clicked()
         }
 
         //all possible data gathered, what is not gathered is guessed or generated
-        //save and sat already is injected into hugeram before confirmtion
+        //save and sat are already injected into hugeram before confirmation
         // it is stupidly wrong, but it won't change anything unless header is written
 
         //if it's single file mode, open form to confirm data we're inserting
@@ -1396,23 +1411,89 @@ void MainWindow::on_InsertButton_clicked()
             if (checkDialog.exec() == QDialog::Rejected) return;
         }
 
-        //write header
-        if (TheConfig->m_bInsertSysUseCounter)
+        //check for doubling saves with the same name
+        bool bDuped = false;
+        int iDupedWith = 0;
+        for (int i=0; i < SavesList.size(); i++)
         {
-            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0x80;
-            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1] = 0x00;
-            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2] = 0x00;
-            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3] = tmpSave.cCounter;
+            if (SavesList.at(i).Name == tmpSave.Name)
+            {
+                bDuped = true;
+                iDupedWith = i;
+            }
+        }
+        if (bDuped)
+        {
+            if (!bFirstDupeFound)
+            {
+                bFirstDupeFound = true;
+                //first or single save, do ask
+                QMessageBox msgBox;
+                msgBox.setText(tr("Save %1 is duplicated. What should we do?").arg(QString(tmpSave.Name)));
+                if (fileNames.size()>1)
+                    msgBox.setText(tr("Save %1 is duplicated. What should we do with this one and others (if they wil appear)?").arg(QString(tmpSave.Name)));
+                QAbstractButton *dontinsertButton =
+                      msgBox.addButton(tr("Don't insert"), QMessageBox::RejectRole);
+                QAbstractButton *overwriteButton =
+                      msgBox.addButton(tr("Overwrite"), QMessageBox::AcceptRole);
+                QAbstractButton *keepbothButton =
+                      msgBox.addButton(tr("Keep both"), QMessageBox::ActionRole);
+                msgBox.exec();
+                if (msgBox.clickedButton() == dontinsertButton)
+                {
+                    //reset a flag
+                    bKeepDupes = false;
+                    break;
+                }
+                if (msgBox.clickedButton() == overwriteButton)
+                {
+                    //delete old save - bad way, only dumping sys header's start marker
+                    HugeRAM[SavesList.at(iDupedWith).iStartCluster*TheConfig->m_iClusterSize] = 0x00;
+                    //set flag
+                    bOverwriteDupes = true;
+                }
+                //third button is a default behaviour, so ignoring it
+            }
+            else
+            {
+                //second and so on saves that are duped
+                if (bOverwriteDupes)
+                    HugeRAM[SavesList.at(iDupedWith).iStartCluster*TheConfig->m_iClusterSize] = 0x00;
+            }
+
+        }
+
+        //first we must re-copy headers if they are to be inserted
+        //since the previous cycle was async one
+        if (TheConfig->m_bInsertSys)
+        {
+            //replacing first sys header
+            HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize,SysHeader1st);
         }
         else
         {
+            //creating dummy first sys header
             HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0x80;
             HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1] = 0x00;
             HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2] = 0x00;
-            HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3] = 0x00;//what counter value should we use here?
         }
+        if (TheConfig->m_bInsertSysAll)
+        {
+            //replacing remaining sys headers
+            for (int i=0;i<SysHeadersList.size();i++)
+                HugeRAM.replace(tmpSave.SAT[i]*TheConfig->m_iClusterSize,SysHeadersList.at(i));
+        }
+        //then we are to patch counter, regardless of what the config is,
+        //since user had a chance to edit it already
+        //patching first entity
+        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3] = tmpSave.cCounter;
+        //patching the rest
+        for (int i=1; i<(tmpSave.iSATSize); i++)
+            HugeRAM[tmpSave.SAT[i-1]*TheConfig->m_iClusterSize+3] = tmpSave.cCounter;
+
+        //write header
         HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+4,11,tmpSave.Name.left(11));
-        buf[0] = tmpSave.iLanguageCode;
+        buf[0] = (char) tmpSave.cLanguageCode;
         HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+15,1,QByteArray(buf,1));
         HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+16,10,tmpSave.Comment.left(10));
         HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+26,4,tmpSave.DateTimeRaw.left(4));
@@ -1423,9 +1504,10 @@ void MainWindow::on_InsertButton_clicked()
         HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+30,4,QByteArray(buf,4));
         file_in.close();
         ParseHugeRAM();
+        SysHeadersList.clear();
     }//cycle through all saves
 
-    ui->statusBar->showMessage(QString("Save from file %1 inserted").arg(fileName));
+    ui->statusBar->showMessage(tr("Save from file %1 inserted").arg(fileName));
 }
 
 void MainWindow::on_DeleteButton_clicked()
@@ -1436,7 +1518,7 @@ void MainWindow::on_DeleteButton_clicked()
     if (ui->tableWidget->rowCount() < 1)
     {
         QMessageBox msgBox;
-        msgBox.setText(QString("Excuse me, but we have nothing to delete."));
+        msgBox.setText(tr("Excuse me, but we have nothing to delete."));
         msgBox.exec();
         return;
     }
@@ -1465,7 +1547,7 @@ void MainWindow::on_DeleteButton_clicked()
         }
     }
     ParseHugeRAM();
-    ui->statusBar->showMessage(QString("Save deleted"));
+    ui->statusBar->showMessage(tr("Save deleted"));
 }
 
 void MainWindow::on_Sort_Order_Changed(int logicalIndex)
@@ -1502,7 +1584,7 @@ void MainWindow::on_NewButton_clicked()
     if (SavesList.size()>0)
     {
         QMessageBox msgBox;
-        msgBox.setText(QString("Do you want to clear existing data?"));
+        msgBox.setText(tr("Do you want to clear existing data?"));
         msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
         if (msgBox.exec() == QMessageBox::Cancel)
             return;
@@ -1513,7 +1595,7 @@ void MainWindow::on_NewButton_clicked()
     if (NewSettings.iImageSize*1024 < TheConfig->m_iClusterSize*3)
     {
         QMessageBox msgBox;
-        msgBox.setText(QString("Image size is too small. Try a bigger one please. "));
+        msgBox.setText(tr("Image size is too small. Try a bigger one please. "));
         msgBox.exec();
         return;
     }

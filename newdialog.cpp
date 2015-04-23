@@ -10,7 +10,7 @@ NewDialog::NewDialog(NewSettingsType *settings,QWidget *parent) :
     ui->ClusterSizeComboBox->addItem(QString("512"));
     ui->ClusterSizeComboBox->addItem(QString("256"));
     ui->ClusterSizeComboBox->addItem(QString("64"));
-    ui->ClusterSizeComboBox->addItem(QString("Custom"));
+    ui->ClusterSizeComboBox->addItem(tr("Custom"));
     m_Settings = *m_pSettings; //get detected values
     if (CLUSTER_512 == m_Settings.IOClusterSize)
     {

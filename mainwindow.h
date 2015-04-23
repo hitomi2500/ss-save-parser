@@ -28,7 +28,7 @@ typedef struct MyNewSettings{
 typedef struct MySave{
     QByteArray Name;
     QByteArray Comment;
-    int iLanguageCode;
+    unsigned char cLanguageCode;
     QDateTime DateTime;
     QByteArray DateTimeRaw;
     int iBytes;
@@ -36,7 +36,7 @@ typedef struct MySave{
     short SAT[2048];
     int iSATSize;
     int iStartCluster;
-    char cCounter;
+    unsigned char cCounter;
 } SaveType;
 
 namespace Ui {

@@ -37,9 +37,9 @@ ParseResult ParseHeader(QByteArray buf, SaveType *save)
 {
 if (buf.size() < 34 ) return DataTooShort;
 if (buf.at(0)!=(char)0x80) return NotAHeader;
-save->cCounter = buf.at(3);
+save->cCounter = (unsigned char)buf.at(3);
 save->Name = buf.mid(4,11);
-save->iLanguageCode = buf.at(15);
+save->cLanguageCode = (unsigned char)buf.at(15);
 save->Comment = buf.mid(16,10);
 save->DateTimeRaw = buf.mid(26,4);
 /*save->DateTime.setDate(QDate(1980,1,1));

@@ -7,12 +7,12 @@ FileIOSettingsDialog::FileIOSettingsDialog(FileIOSettingsType *settings, QWidget
 {
     m_pSettings = settings;
     ui->setupUi(this);
-    ui->FileIOModeComboBox->addItem(QString("SH2 mode (dummy byte before each byte)"));
-    ui->FileIOModeComboBox->addItem(QString("Raw mode"));
+    ui->FileIOModeComboBox->addItem(tr("SH2 mode (dummy byte before each byte)"));
+    ui->FileIOModeComboBox->addItem(tr("Raw mode"));
     ui->ClusterSizeComboBox->addItem(QString("512"));
     ui->ClusterSizeComboBox->addItem(QString("256"));
     ui->ClusterSizeComboBox->addItem(QString("64"));
-    ui->ClusterSizeComboBox->addItem(QString("Custom"));
+    ui->ClusterSizeComboBox->addItem(tr("Custom"));
     m_Settings = *m_pSettings; //get detected values
     if (RAW_IO_MODE == m_Settings.IOMode)
         ui->FileIOModeComboBox->setCurrentIndex(1);
