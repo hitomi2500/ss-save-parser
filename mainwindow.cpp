@@ -939,9 +939,25 @@ void MainWindow::on_ExtractButton_clicked()
         {
             file_out.write(tmpSave.Comment,10);
         }
+        //SSF specific - add zero and language code after description
+        if (TheConfig->m_ExtractMode == ExtractSSF)
+        {
+            buf[0]=(char)0;
+            buf[1]=(char)tmpSave.cLanguageCode;
+            file_out.write(buf,2);
+        }
         if (TheConfig->m_bExtractDateTime)
         {
-            file_out.write(tmpSave.DateTimeRaw,4);
+            //SSF specific date/time
+            if (TheConfig->m_ExtractMode == ExtractSSF)
+            {
+                tmpSave.DateTimeRaw = GetSSF4ByteFromDateTime(tmpSave.DateTime);
+                file_out.write(tmpSave.DateTimeRaw,4);
+            }
+            else
+            {
+                file_out.write(tmpSave.DateTimeRaw,4);
+            }
         }
         if (TheConfig->m_bExtractSize)
         {
@@ -1170,7 +1186,8 @@ void MainWindow::on_InsertButton_clicked()
         {
             //no name was provided, using file name
             QTextCodec *codec = QTextCodec::codecForName("Shift-JIS");
-            tmpSave.Name = codec->fromUnicode(fileName).left(11);
+            //this is windows-specific, change something if porting
+            tmpSave.Name = codec->fromUnicode(fileName.mid(fileName.lastIndexOf(QChar('/'))+1,11));
         }
         if (TheConfig->m_bInsertLanguage)
         {
@@ -1202,11 +1219,26 @@ void MainWindow::on_InsertButton_clicked()
             buf[9] = 0xDB; //ro
             tmpSave.Comment = QByteArray(buf,10);
         }
+        //SSF specific - skip 1 zero and get language code after description
+        if (TheConfig->m_InsertMode == InsertSSF)
+        {
+            file_in.read(buf,2);
+            tmpSave.cLanguageCode = (unsigned char) buf[1];
+        }
         if (TheConfig->m_bInsertDateTime)
         {
             file_in.read(buf,4);
             tmpSave.DateTimeRaw = QByteArray(buf,4);
-            tmpSave.DateTime = GetDateTimeFromRaw4Byte(tmpSave.DateTimeRaw);
+            //SSF specific date/time
+            if (TheConfig->m_InsertMode == InsertSSF)
+            {
+                tmpSave.DateTime = GetDateTimeFromSSF4Byte(tmpSave.DateTimeRaw);
+                tmpSave.DateTimeRaw = GetRaw4ByteFromDateTime(tmpSave.DateTime);
+            }
+            else
+            {
+                tmpSave.DateTime = GetDateTimeFromRaw4Byte(tmpSave.DateTimeRaw);
+            }
         }
         else
         {
@@ -1352,51 +1384,48 @@ void MainWindow::on_InsertButton_clicked()
             //and since we cannot calculate old clusters' size, we boiled out before in
             //the case sys headers were inserted
             //now size stuff
-            if (TheConfig->m_bInsertSize)
-            {
-                //size provided, that's good, we don't need to make any specific actions
-                //calculate new SAT size
-                tmpSave.iSATSize = 1;
-                while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
-                    tmpSave.iSATSize++;
-                //fill new sat
+            if (!TheConfig->m_bInsertSize) //if no size was provided, calculate it
+                tmpSave.iBytes = file_in.size()-file_in.pos();
+
+            //calculate new SAT size
+            tmpSave.iSATSize = 1;
+            while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
                 tmpSave.iSATSize++;
-                for (int i=0;i<(tmpSave.iSATSize-1);i++)
-                    tmpSave.SAT[i] = tmpSave.iStartCluster+i+1;
-                tmpSave.SAT[tmpSave.iSATSize-1] = 0;
-                //copy SAT to hugeram
-                int iPointer = tmpSave.iStartCluster*TheConfig->m_iClusterSize + 34;
-                for (int i=0;i<tmpSave.iSATSize;i++)
+            //fill new sat
+            tmpSave.iSATSize++;
+            for (int i=0;i<(tmpSave.iSATSize-1);i++)
+                tmpSave.SAT[i] = tmpSave.iStartCluster+i+1;
+            tmpSave.SAT[tmpSave.iSATSize-1] = 0;
+            //copy SAT to hugeram
+            int iPointer = tmpSave.iStartCluster*TheConfig->m_iClusterSize + 34;
+            for (int i=0;i<tmpSave.iSATSize;i++)
+            {
+                if (iPointer % TheConfig->m_iClusterSize == 0)
                 {
-                    if (iPointer % TheConfig->m_iClusterSize == 0)
-                    {
-                        HugeRAM[iPointer] = 0;
-                        HugeRAM[iPointer+1] = 0;
-                        HugeRAM[iPointer+2] = 0;
-                        HugeRAM[iPointer+3] = tmpSave.cCounter;
-                        iPointer+=4;
-                    }
-                    HugeRAM[iPointer] = (char) ( tmpSave.SAT[i] / 0x100 );
-                    HugeRAM[iPointer+1] = (char) ( tmpSave.SAT[i] % 0x100 );
-                    iPointer+=2;
+                    HugeRAM[iPointer] = 0;
+                    HugeRAM[iPointer+1] = 0;
+                    HugeRAM[iPointer+2] = 0;
+                    HugeRAM[iPointer+3] = tmpSave.cCounter;
+                    iPointer+=4;
                 }
-                //copy save itself to hugeram
-                for (int i=0; i< tmpSave.iBytes; i++)
+                HugeRAM[iPointer] = (char) ( tmpSave.SAT[i] / 0x100 );
+                HugeRAM[iPointer+1] = (char) ( tmpSave.SAT[i] % 0x100 );
+                iPointer+=2;
+            }
+            //copy save itself to hugeram
+            for (int i=0; i< tmpSave.iBytes; i++)
+            {
+                if (iPointer % TheConfig->m_iClusterSize == 0)
                 {
-                    if (iPointer % TheConfig->m_iClusterSize == 0)
-                    {
-                        HugeRAM[iPointer] = 0;
-                        HugeRAM[iPointer+1] = 0;
-                        HugeRAM[iPointer+2] = 0;
-                        HugeRAM[iPointer+3] = tmpSave.cCounter;
-                        iPointer+=4;
-                    }
-                    file_in.read(buf,1);
-                    HugeRAM[iPointer] = buf[0];
-                    iPointer++;
+                    HugeRAM[iPointer] = 0;
+                    HugeRAM[iPointer+1] = 0;
+                    HugeRAM[iPointer+2] = 0;
+                    HugeRAM[iPointer+3] = tmpSave.cCounter;
+                    iPointer+=4;
                 }
-                //we're done the case with no sat case!
-                //now only check & write header
+                file_in.read(buf,1);
+                HugeRAM[iPointer] = buf[0];
+                iPointer++;
             }
         }
 

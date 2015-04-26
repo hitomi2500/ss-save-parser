@@ -10,16 +10,16 @@ SetupWindow::SetupWindow(QWidget *parent) :
     int i,j;
     SetupConfig = new Config;
     ui->setupUi(this);
-    ui->comboBox_ExtractMode->addItem(tr("SSF-like"));
+    ui->comboBox_ExtractMode->addItem(tr("SSF mode"));
     ui->comboBox_ExtractMode->addItem(tr("AR-like"));
     ui->comboBox_ExtractMode->addItem(tr("Full"));
-    ui->comboBox_ExtractMode->addItem(tr("RAW"));
+    ui->comboBox_ExtractMode->addItem(tr("Raw"));
     ui->comboBox_ExtractMode->addItem(tr("Druid II mode"));
     ui->comboBox_ExtractMode->addItem(tr("Manual"));
-    ui->comboBox_InsertMode->addItem(tr("SSF-like"));
+    ui->comboBox_InsertMode->addItem(tr("SSF mode"));
     ui->comboBox_InsertMode->addItem(tr("AR-like"));
     ui->comboBox_InsertMode->addItem(tr("Full"));
-    ui->comboBox_InsertMode->addItem(tr("RAW"));
+    ui->comboBox_InsertMode->addItem(tr("Raw"));
     ui->comboBox_InsertMode->addItem(tr("Druid II mode"));
     ui->comboBox_InsertMode->addItem(tr("Manual"));
     QImage img(QSize(10,10),QImage::Format_RGB32);
@@ -85,17 +85,17 @@ void SetupWindow::UpdateFromConfig()
             ui->checkBox_FillSysZeros->setDisabled(true);
             ui->checkBox_FillSysZeros->setChecked(false);
             ui->checkBox_ExtractName->setDisabled(true);
-            ui->checkBox_ExtractName->setChecked(true);
+            ui->checkBox_ExtractName->setChecked(false);
             ui->checkBox_ExtractComment->setDisabled(true);
             ui->checkBox_ExtractComment->setChecked(true);
             ui->checkBox_ExtractDateTime->setDisabled(true);
             ui->checkBox_ExtractDateTime->setChecked(true);
             ui->checkBox_ExtractSize->setDisabled(true);
-            ui->checkBox_ExtractSize->setChecked(true);
+            ui->checkBox_ExtractSize->setChecked(false);
             ui->checkBox_ExtractSAT->setDisabled(true);
-            ui->checkBox_ExtractSAT->setChecked(true);
+            ui->checkBox_ExtractSAT->setChecked(false);
             ui->checkBox_ExtractLanguage->setDisabled(true);
-            ui->checkBox_ExtractLanguage->setChecked(true);
+            ui->checkBox_ExtractLanguage->setChecked(false);
             ui->checkBox_ExtractSysAll->setDisabled(true);
             ui->checkBox_ExtractSysAll->setChecked(false);
             break;
@@ -217,17 +217,17 @@ void SetupWindow::UpdateFromConfig()
             ui->checkBox_InsertSysUseCounter->setDisabled(true);
             ui->checkBox_InsertSysUseCounter->setChecked(false);
             ui->checkBox_InsertName->setDisabled(true);
-            ui->checkBox_InsertName->setChecked(true);
+            ui->checkBox_InsertName->setChecked(false);
             ui->checkBox_InsertLanguage->setDisabled(true);
-            ui->checkBox_InsertLanguage->setChecked(true);
+            ui->checkBox_InsertLanguage->setChecked(false);
             ui->checkBox_InsertComment->setDisabled(true);
             ui->checkBox_InsertComment->setChecked(true);
             ui->checkBox_InsertDatetime->setDisabled(true);
             ui->checkBox_InsertDatetime->setChecked(true);
             ui->checkBox_InsertSize->setDisabled(true);
-            ui->checkBox_InsertSize->setChecked(true);
+            ui->checkBox_InsertSize->setChecked(false);
             ui->checkBox_InsertSAT->setDisabled(true);
-            ui->checkBox_InsertSAT->setChecked(true);
+            ui->checkBox_InsertSAT->setChecked(false);
             break;
         case InsertAR:
             ui->comboBox_InsertMode->setCurrentIndex(1);
@@ -497,6 +497,14 @@ void SetupWindow::UpdateFromConfig()
             iCurrentPos++;
         }
     }
+    if (SetupConfig->m_ExtractMode == ExtractSSF)
+    {
+        //SSF specific - add 1 zero and language code after description
+        MyLittlePainter.fillRect(1+11*(iCurrentPos%16),1+11*(iCurrentPos/16),10,10,QBrush(Qt::white,Qt::SolidPattern));
+        iCurrentPos++;
+        MyLittlePainter.fillRect(1+11*(iCurrentPos%16),1+11*(iCurrentPos/16),10,10,QBrush(Qt::cyan,Qt::SolidPattern));
+        iCurrentPos++;
+    }
     if (SetupConfig->m_bExtractDateTime)
     {
         //draw datetime
@@ -653,6 +661,14 @@ void SetupWindow::UpdateFromConfig()
             MyLittlePainter.fillRect(1+11*(iCurrentPos%16),1+11*(iCurrentPos/16),10,10,QBrush(Qt::yellow,Qt::SolidPattern));
             iCurrentPos++;
         }
+    }
+    if (SetupConfig->m_InsertMode == InsertSSF)
+    {
+        //SSF specific - add zero and language after description
+        MyLittlePainter.fillRect(1+11*(iCurrentPos%16),1+11*(iCurrentPos/16),10,10,QBrush(Qt::white,Qt::SolidPattern));
+        iCurrentPos++;
+        MyLittlePainter.fillRect(1+11*(iCurrentPos%16),1+11*(iCurrentPos/16),10,10,QBrush(Qt::cyan,Qt::SolidPattern));
+        iCurrentPos++;
     }
     if (SetupConfig->m_bInsertDateTime)
     {

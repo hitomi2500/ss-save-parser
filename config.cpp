@@ -17,10 +17,10 @@ void Config::UpdateFlags()
     case ExtractSSF:
         m_bExtractDateTime=true;
         m_bExtractDescription=true;
-        m_bExtractLanguage=true;
-        m_bExtractName=true;
-        m_bExtractSAT=true;
-        m_bExtractSize=true;
+        m_bExtractLanguage=false;
+        m_bExtractName=false;
+        m_bExtractSAT=false;
+        m_bExtractSize=false;
         m_bExtractSys=false;
         m_bExtractSysAll=false;
         m_bExtractSysFillZero=false;
@@ -77,10 +77,10 @@ void Config::UpdateFlags()
     case InsertSSF:
         m_bInsertDateTime=true;
         m_bInsertDescription=true;
-        m_bInsertLanguage=true;
-        m_bInsertName=true;
-        m_bInsertSAT=true;
-        m_bInsertSize=true;
+        m_bInsertLanguage=false;
+        m_bInsertName=false;
+        m_bInsertSAT=false;
+        m_bInsertSize=false;
         m_bInsertSys=false;
         m_bInsertSysAll=false;
         m_bInsertSysUseCounter=false;

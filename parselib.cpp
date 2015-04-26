@@ -33,6 +33,44 @@ QByteArray GetRaw4ByteFromDateTime(QDateTime dt)
     return QByteArray(buf,4);
 }
 
+QDateTime GetDateTimeFromSSF4Byte(QByteArray buf)
+{
+    QDateTime d;
+    qint64 tim = 0;
+    if (buf.size() < 4) return QDateTime::fromMSecsSinceEpoch(tim,Qt::UTC); ;
+    d.setDate(QDate(1980,1,1));
+    d.setTime(QTime(0,0,0,0));
+    d=d.addYears(((unsigned char)buf.at(3))*2);
+    d=d.addYears((((unsigned char)buf.at(2))&0x80)/0x80);
+    d=d.addMonths(((((unsigned char)buf.at(2))&0x78)/0x8)-1);
+    d=d.addDays((((unsigned char)buf.at(2))&0x7)*4);
+    d=d.addDays(((((unsigned char)buf.at(1))&0xC0)/0x40)-1);
+    d=d.addSecs(((((unsigned char)buf.at(1))&0x3E)/0x2)*60*60);//hours
+    d=d.addSecs(((((unsigned char)buf.at(1))&0x01)*32)*60);//minutes
+    d=d.addSecs(((((unsigned char)buf.at(0))&0xF8)/0x08)*60);//minutes
+    return d;
+}
+
+QByteArray GetSSF4ByteFromDateTime(QDateTime dt)
+{
+    char buf[4];
+    qint64 tim = 0;
+    QDateTime d;
+    d.setDate(QDate(1980,1,1));
+    d.setTime(QTime(0,0,0,0));
+    tim = (dt.toMSecsSinceEpoch() - d.toMSecsSinceEpoch() )/60000  + dt.offsetFromUtc()/60 ;
+    buf[3] = (dt.date().year()-1980)/2;
+    buf[2] = 0x80*((dt.date().year()-1980)%2);
+    buf[2] |= 0x08*(dt.date().month()+1);
+    buf[2] |= ((dt.date().day()+1)/4);
+    buf[1] |= 0x40*((dt.date().day()+1)%4);
+    buf[1] |= 0x02*(dt.time().hour());
+    buf[1] |= (dt.time().minute()/32);
+    buf[0] |= 0x08*(dt.time().minute()%32);
+    return QByteArray(buf,4);
+}
+
+
 ParseResult ParseHeader(QByteArray buf, SaveType *save)
 {
 if (buf.size() < 34 ) return DataTooShort;
