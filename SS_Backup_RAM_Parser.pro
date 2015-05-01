@@ -24,7 +24,8 @@ SOURCES += main.cpp\
     parselib.cpp \
     entersavedetailsdialog.cpp \
     fileiosettingsdialog.cpp \
-    newdialog.cpp
+    newdialog.cpp \
+    imagemapwindow.cpp
 
 HEADERS  += mainwindow.h \
     setupwindow.h \
@@ -32,13 +33,15 @@ HEADERS  += mainwindow.h \
     parselib.h \
     entersavedetailsdialog.h \
     fileiosettingsdialog.h \
-    newdialog.h
+    newdialog.h \
+    imagemapwindow.h
 
 FORMS    += mainwindow.ui \
     setupwindow.ui \
     entersavedetailsdialog.ui \
     fileiosettingsdialog.ui \
-    newdialog.ui
+    newdialog.ui \
+    imagemapwindow.ui
 
 DISTFILES +=
 

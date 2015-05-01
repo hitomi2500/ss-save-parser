@@ -24,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     TheConfig = new Config;
     SetupWin = new SetupWindow(this);
+    ImageMapWin = new ImageMapWindow(this,&SavesList,TheConfig);
     ui->tableWidget->setColumnCount(9);
     ui->tableWidget->setRowCount(0);
     sList.append(tr("Name"));
@@ -1657,4 +1658,10 @@ void MainWindow::on_NewButton_clicked()
     TheConfig->m_iFileSize = NewSettings.iImageSize*1024;
     TheConfig->SaveToRegistry();
     ParseHugeRAM();//updating
+}
+
+void MainWindow::on_ImageMapButton_clicked()
+{
+    ImageMapWin->show();
+    ImageMapWin->UpdateData();
 }

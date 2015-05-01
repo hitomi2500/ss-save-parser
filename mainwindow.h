@@ -5,6 +5,7 @@
 #include <QDate>
 #include <QTableWidget>
 #include "setupwindow.h"
+#include "imagemapwindow.h"
 #include "config.h"
 
 enum FileIOMode {SH2_IO_MODE,RAW_IO_MODE};
@@ -24,20 +25,6 @@ typedef struct MyNewSettings{
     int iIOCustomClusterSize;
     int iImageSize;
 } NewSettingsType;
-
-typedef struct MySave{
-    QByteArray Name;
-    QByteArray Comment;
-    unsigned char cLanguageCode;
-    QDateTime DateTime;
-    QByteArray DateTimeRaw;
-    int iBytes;
-    int iBlocks;
-    short SAT[2048];
-    int iSATSize;
-    int iStartCluster;
-    unsigned char cCounter;
-} SaveType;
 
 namespace Ui {
 class MainWindow;
@@ -72,9 +59,12 @@ private slots:
 
     void on_NewButton_clicked();
 
+    void on_ImageMapButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     SetupWindow *SetupWin;
+    ImageMapWindow *ImageMapWin;
     Config *TheConfig;
     FileIOSettingsType IOSettings;
     NewSettingsType NewSettings;

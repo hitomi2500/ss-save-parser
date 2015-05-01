@@ -2,10 +2,25 @@
 #define CONFIG_H
 
 #include <QSettings>
+#include <QDateTime>
 
 enum ExtractMode {ExtractSSF,ExtractAR,ExtractFull,ExtractRaw,ExtractDruidII,ExtractManual};
 enum InsertMode {InsertSSF,InsertAR,InsertFull,InsertRaw,InsertDruidII,InsertManual};
 enum DeleteMode {DeleteSingleSys,DeleteAllSys,DeleteFull};
+
+typedef struct MySave{
+    QByteArray Name;
+    QByteArray Comment;
+    unsigned char cLanguageCode;
+    QDateTime DateTime;
+    QByteArray DateTimeRaw;
+    int iBytes;
+    int iBlocks;
+    short SAT[2048];
+    int iSATSize;
+    int iStartCluster;
+    unsigned char cCounter;
+} SaveType;
 
 class Config
 {
