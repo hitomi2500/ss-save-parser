@@ -5,10 +5,25 @@
 #include <QGraphicsScene>
 #include "config.h"
 
+class ImageMapWindow;
+
+class MyLittleScene : public QGraphicsScene
+{
+    Q_OBJECT
+public:
+    explicit MyLittleScene(QWidget *parent = 0, ImageMapWindow * mappy = 0);
+
+protected :
+    void mousePressEvent(QGraphicsSceneMouseEvent * event);
+
+private:
+    ImageMapWindow * pMap;
+};
+
+
 namespace Ui {
 class ImageMapWindow;
 }
-
 class ImageMapWindow : public QDialog
 {
     Q_OBJECT
@@ -18,18 +33,20 @@ public:
     ~ImageMapWindow();
     void UpdateData();
     void UpdateData(int iIndex);
+    int iMapWidth;
+    int iCurrentRow;
+    QList<SaveType> *SavesList;
+    Ui::ImageMapWindow *ui;
 
 private slots:
     void on_listWidget_currentRowChanged(int currentRow);
+    void blink();
 
 private:
-    Ui::ImageMapWindow *ui;
-    QList<SaveType> *SavesList;
     Config * TheConfig;
-    QGraphicsScene scene;
-    int iCurrentRow;
-    int iMapWidth=1;
-    int iMapHeight=1;
+    MyLittleScene * scene;
+    int iMapHeight;
+    int iBlink;
 };
 
 #endif // IMAGEMAPWINDOW_H
