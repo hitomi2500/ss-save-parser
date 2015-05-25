@@ -54,7 +54,7 @@
        <string>Extract</string>
       </attribute>
       <layout class="QGridLayout" name="verticalLayout_11">
-       <item row="0" column="0" rowspan="2">
+       <item row="1" column="0" rowspan="2">
         <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
           <widget class="QLabel" name="label_13">
@@ -68,7 +68,7 @@
          </item>
         </layout>
        </item>
-       <item row="3" column="4">
+       <item row="4" column="4">
         <layout class="QFormLayout" name="formLayout">
          <item row="1" column="0">
           <widget class="QLabel" name="label_Extract_L1">
@@ -233,21 +233,21 @@
          </item>
         </layout>
        </item>
-       <item row="3" column="2">
+       <item row="4" column="2">
         <widget class="QLabel" name="label">
          <property name="text">
           <string>-&gt;</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="3">
+       <item row="2" column="3">
         <widget class="QLabel" name="label_3">
          <property name="text">
           <string>In file</string>
          </property>
         </widget>
        </item>
-       <item row="3" column="0">
+       <item row="4" column="0">
         <layout class="QVBoxLayout" name="verticalLayout_12">
          <item>
           <widget class="QCheckBox" name="checkBox_ExtractSys">
@@ -314,24 +314,31 @@
          </item>
         </layout>
        </item>
-       <item row="1" column="1">
+       <item row="2" column="1">
         <widget class="QLabel" name="label_2">
          <property name="text">
           <string>In image</string>
          </property>
         </widget>
        </item>
-       <item row="3" column="1">
+       <item row="4" column="1">
         <widget class="QLabel" name="label_DemoExtractImage">
          <property name="text">
           <string>Sexy table here</string>
          </property>
         </widget>
        </item>
-       <item row="3" column="3">
+       <item row="4" column="3">
         <widget class="QLabel" name="label_DemoExtractFile">
          <property name="text">
           <string>Sexy table here</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QCheckBox" name="checkBox_Ask_Every_Extract">
+         <property name="text">
+          <string>Ask for mode at every extract</string>
          </property>
         </widget>
        </item>
@@ -342,7 +349,21 @@
        <string>Insert</string>
       </attribute>
       <layout class="QGridLayout" name="verticalLayout_13">
-       <item row="5" column="0">
+       <item row="1" column="0" rowspan="2">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QLabel" name="label_14">
+           <property name="text">
+            <string>Insertion mode</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="comboBox_InsertMode"/>
+         </item>
+        </layout>
+       </item>
+       <item row="6" column="0">
         <layout class="QVBoxLayout" name="verticalLayout_14">
          <item>
           <widget class="QCheckBox" name="checkBox_InsertSys">
@@ -409,42 +430,7 @@
          </item>
         </layout>
        </item>
-       <item row="0" column="0" rowspan="2">
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
-         <item>
-          <widget class="QLabel" name="label_14">
-           <property name="text">
-            <string>Insertion mode</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="comboBox_InsertMode"/>
-         </item>
-        </layout>
-       </item>
-       <item row="5" column="3">
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>-&gt;</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="2">
-        <widget class="QLabel" name="label_5">
-         <property name="text">
-          <string>In file</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="4">
-        <widget class="QLabel" name="label_6">
-         <property name="text">
-          <string>In Image</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="6">
+       <item row="6" column="6">
         <layout class="QFormLayout" name="formLayout_3">
          <item row="0" column="1">
           <widget class="QLabel" name="label_10">
@@ -609,17 +595,45 @@
          </item>
         </layout>
        </item>
-       <item row="5" column="4">
+       <item row="6" column="4">
         <widget class="QLabel" name="label_DemoInsertImage">
          <property name="text">
           <string>Sexy table here too</string>
          </property>
         </widget>
        </item>
-       <item row="5" column="2">
+       <item row="6" column="2">
         <widget class="QLabel" name="label_DemoInsertFile">
          <property name="text">
           <string>Sexy table here</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="2">
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>In file</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="4">
+        <widget class="QLabel" name="label_6">
+         <property name="text">
+          <string>In Image</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="3">
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>-&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QCheckBox" name="checkBox_Ask_Every_Insert">
+         <property name="text">
+          <string>Ask for mode at every insert</string>
          </property>
         </widget>
        </item>

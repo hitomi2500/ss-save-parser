@@ -159,6 +159,8 @@ void Config::SaveToRegistry()
     TheSettings->setValue("Insert Language",m_bInsertLanguage);
     TheSettings->setValue("Delete Mode",(int)m_DeleteMode);
     TheSettings->setValue("Show Hex Values",m_bShowHexValues);
+    TheSettings->setValue("Ask For Format At Every Extract",m_bAskFormatAtEveryExtract);
+    TheSettings->setValue("Ask For Format At Every Insert",m_bAskFormatAtEveryInsert);
     TheSettings->sync();
 }
 
@@ -186,5 +188,7 @@ void Config::LoadFromRegistry()
     m_bInsertLanguage = (bool)TheSettings->value("Insert Language").toBool();
     m_DeleteMode = (DeleteMode)TheSettings->value("Delete Mode").toInt();
     m_bShowHexValues = (bool)TheSettings->value("Show Hex Values").toBool();
+    m_bAskFormatAtEveryExtract = (bool)TheSettings->value("Ask For Format At Every Extract").toBool();
+    m_bAskFormatAtEveryInsert = (bool)TheSettings->value("Ask For Format At Every Insert").toBool();
     UpdateFlags();
 }

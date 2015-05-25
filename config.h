@@ -58,6 +58,8 @@ public:
     bool m_bInsertSAT;
     DeleteMode m_DeleteMode;
     bool m_bShowHexValues;
+    bool m_bAskFormatAtEveryExtract;
+    bool m_bAskFormatAtEveryInsert;
 };
 
 #endif // CONFIG_H

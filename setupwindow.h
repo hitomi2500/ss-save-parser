@@ -4,6 +4,11 @@
 #include <QDialog>
 #include "config.h"
 
+#define SETUPTYPE_FULL 0
+#define SETUPTYPE_EXTRACT 1
+#define SETUPTYPE_INSERT 2
+
+
 namespace Ui {
 class SetupWindow;
 }
@@ -13,9 +18,10 @@ class SetupWindow : public QDialog
     Q_OBJECT
 
 public:
-    explicit SetupWindow(QWidget *parent = 0);
+    explicit SetupWindow(QWidget *parent = 0, int SetupType = SETUPTYPE_FULL);
     ~SetupWindow();
     void UpdateFromConfig();
+    Config *SetupConfig;
 
 //signals:
     //SetupAccepted();
@@ -71,9 +77,13 @@ private slots:
 
     void on_checkBox_InsertSysAll_toggled(bool checked);
 
+    void on_checkBox_Ask_Every_Extract_toggled(bool checked);
+
+    void on_checkBox_Ask_Every_Insert_toggled(bool checked);
+
 private:
     Ui::SetupWindow *ui;
-    Config *SetupConfig;
+    int iSetupType;
 };
 
 #endif // SETUPWINDOW_H

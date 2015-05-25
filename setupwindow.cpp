@@ -3,12 +3,13 @@
 #include "setupwindow.h"
 #include "ui_setupwindow.h"
 
-SetupWindow::SetupWindow(QWidget *parent) :
+SetupWindow::SetupWindow(QWidget *parent, int SetupType) :
     QDialog(parent),
     ui(new Ui::SetupWindow)
 {
     int i,j;
     SetupConfig = new Config;
+    iSetupType = SetupType;
     ui->setupUi(this);
     ui->comboBox_ExtractMode->addItem(tr("SSF mode"));
     ui->comboBox_ExtractMode->addItem(tr("AR-like"));
@@ -58,20 +59,28 @@ SetupWindow::SetupWindow(QWidget *parent) :
     this->setWindowTitle(this->windowTitle().append(" ").append(APP_VERSION));
     ui->label->setPixmap(QPixmap(":/images/blue_arrow.xpm"));
     ui->label_4->setPixmap(QPixmap(":/images/blue_arrow.xpm"));
+    if (iSetupType == SETUPTYPE_EXTRACT)
+    {
+        //in extract only mode hide other tabs
+        ui->tabWidget->removeTab(4);
+        ui->tabWidget->removeTab(3);
+        ui->tabWidget->removeTab(2);
+        ui->tabWidget->removeTab(0);
+        ui->checkBox_Ask_Every_Extract->hide();
+    }
     SetupConfig->LoadFromRegistry();
     UpdateFromConfig();
 }
 
 SetupWindow::~SetupWindow()
 {
-    //SetupConfig->SaveToRegistry();
     delete ui;
 }
 
 void SetupWindow::on_SetupWindow_accepted()
 {
-    SetupConfig->SaveToRegistry();
-    //emit this->SetupAccepted();
+    if (iSetupType == SETUPTYPE_FULL)
+        SetupConfig->SaveToRegistry(); //using registry setup only for a full one
 }
 
 void SetupWindow::UpdateFromConfig()
@@ -350,6 +359,8 @@ void SetupWindow::UpdateFromConfig()
     }
 
     ui->checkBox_ShowHex->setChecked(SetupConfig->m_bShowHexValues);
+    ui->checkBox_Ask_Every_Extract->setChecked(SetupConfig->m_bAskFormatAtEveryExtract);
+    ui->checkBox_Ask_Every_Insert->setChecked(SetupConfig->m_bAskFormatAtEveryInsert);
 
     QPicture DemoImagePic;
     QPicture DemoExtractFilePic;
@@ -963,4 +974,15 @@ void SetupWindow::on_checkBox_InsertLanguage_toggled(bool checked)
 void SetupWindow::on_checkBox_ShowHex_toggled(bool checked)
 {
     SetupConfig->m_bShowHexValues = checked;
+}
+
+void SetupWindow::on_checkBox_Ask_Every_Extract_toggled(bool checked)
+{
+    SetupConfig->m_bAskFormatAtEveryExtract = checked;
+}
+
+void SetupWindow::on_checkBox_Ask_Every_Insert_toggled(bool checked)
+{
+    SetupConfig->m_bAskFormatAtEveryInsert = checked;
+
 }

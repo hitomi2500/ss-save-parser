@@ -64,6 +64,8 @@ private slots:
 private:
     Ui::MainWindow *ui;
     SetupWindow *SetupWin;
+    SetupWindow *SetupWinExtract;
+    SetupWindow *SetupWinInsert;
     ImageMapWindow *ImageMapWin;
     Config *TheConfig;
     FileIOSettingsType IOSettings;

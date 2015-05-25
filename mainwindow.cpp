@@ -23,7 +23,9 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     TheConfig = new Config;
-    SetupWin = new SetupWindow(this);
+    SetupWin = new SetupWindow(this,SETUPTYPE_FULL);
+    SetupWinExtract = new SetupWindow(this,SETUPTYPE_EXTRACT);
+    SetupWinInsert = new SetupWindow(this,SETUPTYPE_INSERT);
     ImageMapWin = new ImageMapWindow(this,&SavesList,TheConfig);
     ui->tableWidget->setColumnCount(9);
     ui->tableWidget->setRowCount(0);
@@ -891,6 +893,12 @@ void MainWindow::on_ExtractButton_clicked()
         msgBox.exec();
     }
 
+    //copy extractwin's config from current one
+    if (TheConfig->m_bAskFormatAtEveryExtract)
+    {
+        *(SetupWinExtract->SetupConfig) = *TheConfig;
+    }
+
     //saves cycle
     for (int iSaveIndex = iStart; iSaveIndex <= iEnd; iSaveIndex++)
     {
@@ -907,6 +915,15 @@ void MainWindow::on_ExtractButton_clicked()
                 msgBox.exec();
                 return;
             }
+        }
+        if (TheConfig->m_bAskFormatAtEveryExtract)
+        {
+            //opening format window as modal
+            SetupWinExtract->exec();
+            //getting temporal config from it
+            *TheConfig = *(SetupWinExtract->SetupConfig);
+            //force m_bAskFormatAtEveryExtract flag in config
+            TheConfig->m_bAskFormatAtEveryExtract = true;
         }
         //1st cluster
         if (TheConfig->m_bExtractSys)
@@ -1077,6 +1094,7 @@ void MainWindow::on_ExtractButton_clicked()
         }
         file_out.close();
     }
+    TheConfig->LoadFromRegistry();//restoring config after all those temporal updates (if any)
     ui->statusBar->showMessage(tr("File %1 saved").arg(fileName));
 }
 
