@@ -6,7 +6,7 @@
 
 QT       += core gui
 
-VERSION = 0.9.4
+VERSION = 0.9.5
 DEFINES += APP_VERSION=\\\"$$VERSION\\\"
 
 QMAKE_LFLAGS += -static -static-libgcc
