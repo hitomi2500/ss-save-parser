@@ -22,6 +22,7 @@ public:
     ~SetupWindow();
     void UpdateFromConfig();
     Config *SetupConfig;
+    void SetExtractInsertFilename(QString filename);
 
 //signals:
     //SetupAccepted();

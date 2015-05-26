@@ -918,12 +918,14 @@ void MainWindow::on_ExtractButton_clicked()
         }
         if (TheConfig->m_bAskFormatAtEveryExtract)
         {
+            SetupWinExtract->SetupConfig->m_bAskFormatAtEveryExtract = true;
+            SetupWinExtract->SetupConfig->UpdateFlags();
+            SetupWinExtract->UpdateFromConfig();
+            SetupWinExtract->SetExtractInsertFilename(QString(tmpSave.Name));
             //opening format window as modal
-            SetupWinExtract->exec();
+            if (SetupWinExtract->exec() == QDialog::Rejected) return;
             //getting temporal config from it
             *TheConfig = *(SetupWinExtract->SetupConfig);
-            //force m_bAskFormatAtEveryExtract flag in config
-            TheConfig->m_bAskFormatAtEveryExtract = true;
         }
         //1st cluster
         if (TheConfig->m_bExtractSys)
@@ -1131,6 +1133,12 @@ void MainWindow::on_InsertButton_clicked()
         return;
     }
 
+    //copy insertwin's config from current one
+    if (TheConfig->m_bAskFormatAtEveryInsert)
+    {
+        *(SetupWinInsert->SetupConfig) = *TheConfig;
+    }
+
     //choose file(s) to open
     QStringList fileNames = QFileDialog::getOpenFileNames(this,tr("Load Savegame"), "", NULL);
     if (fileNames.isEmpty()) return; //return if user cancel
@@ -1148,6 +1156,20 @@ void MainWindow::on_InsertButton_clicked()
             return;
         }
         //file opened, move on
+
+        //change config per save if required
+        if (TheConfig->m_bAskFormatAtEveryInsert)
+        {
+            SetupWinInsert->SetupConfig->m_bAskFormatAtEveryInsert = true;
+            SetupWinInsert->SetupConfig->UpdateFlags();
+            SetupWinInsert->UpdateFromConfig();
+            SetupWinInsert->SetExtractInsertFilename(fileName);
+            //opening format window as modal
+            if (SetupWinInsert->exec() == QDialog::Rejected) return;
+            //getting temporal config from it
+            *TheConfig = *(SetupWinInsert->SetupConfig);
+            //force m_bAskFormatAtEveryExtract flag in config
+        }
 
         //check if we have enough space at the end of file
         //we don't insert at 0th or 1st cluster - they're signature cluster and always zero cluster
@@ -1182,6 +1204,7 @@ void MainWindow::on_InsertButton_clicked()
         //check done, go on
 
         //trying to get as much info from file as possible
+        SysHeader1st.clear();
         if (TheConfig->m_bInsertSys)
         {
             file_in.read(buf,4);
@@ -1516,7 +1539,7 @@ void MainWindow::on_InsertButton_clicked()
         if (TheConfig->m_bInsertSys)
         {
             //replacing first sys header
-            HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize,SysHeader1st);
+            HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize,4,SysHeader1st);
         }
         else
         {
@@ -1528,8 +1551,13 @@ void MainWindow::on_InsertButton_clicked()
         if (TheConfig->m_bInsertSysAll)
         {
             //replacing remaining sys headers
-            for (int i=0;i<SysHeadersList.size();i++)
-                HugeRAM.replace(tmpSave.SAT[i]*TheConfig->m_iClusterSize,SysHeadersList.at(i));
+            //new SAT size might be different, so choosing smaller
+            if (tmpSave.iSATSize > SysHeadersList.size())
+                for (int i=0;i<SysHeadersList.size();i++)
+                    HugeRAM.replace(tmpSave.SAT[i]*TheConfig->m_iClusterSize,4,SysHeadersList.at(i));
+            else
+                for (int i=0;i<(tmpSave.iSATSize-1);i++)
+                    HugeRAM.replace(tmpSave.SAT[i]*TheConfig->m_iClusterSize,4,SysHeadersList.at(i));
         }
         //then we are to patch counter, regardless of what the config is,
         //since user had a chance to edit it already
@@ -1538,7 +1566,6 @@ void MainWindow::on_InsertButton_clicked()
         //patching the rest
         for (int i=1; i<(tmpSave.iSATSize); i++)
             HugeRAM[tmpSave.SAT[i-1]*TheConfig->m_iClusterSize+3] = tmpSave.cCounter;
-
         //write header
         HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+4,11,tmpSave.Name.left(11));
         buf[0] = (char) tmpSave.cLanguageCode;
@@ -1556,6 +1583,7 @@ void MainWindow::on_InsertButton_clicked()
     }//cycle through all saves
 
     ui->statusBar->showMessage(tr("Save from file %1 inserted").arg(fileName));
+    TheConfig->LoadFromRegistry();//restoring config after all those temporal updates (if any)
 }
 
 void MainWindow::on_DeleteButton_clicked()

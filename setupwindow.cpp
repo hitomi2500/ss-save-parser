@@ -68,6 +68,15 @@ SetupWindow::SetupWindow(QWidget *parent, int SetupType) :
         ui->tabWidget->removeTab(0);
         ui->checkBox_Ask_Every_Extract->hide();
     }
+    if (iSetupType == SETUPTYPE_INSERT)
+    {
+        //in extract only mode hide other tabs
+        ui->tabWidget->removeTab(4);
+        ui->tabWidget->removeTab(3);
+        ui->tabWidget->removeTab(1);
+        ui->tabWidget->removeTab(0);
+        ui->checkBox_Ask_Every_Insert->hide();
+    }
     SetupConfig->LoadFromRegistry();
     UpdateFromConfig();
 }
@@ -985,4 +994,16 @@ void SetupWindow::on_checkBox_Ask_Every_Insert_toggled(bool checked)
 {
     SetupConfig->m_bAskFormatAtEveryInsert = checked;
 
+}
+
+void SetupWindow::SetExtractInsertFilename(QString filename)
+{
+    if (iSetupType == SETUPTYPE_EXTRACT)
+    {
+        setWindowTitle(QString("Extracting mode for file %1").arg(filename));
+    }
+    if (iSetupType == SETUPTYPE_INSERT)
+    {
+        setWindowTitle(QString("Inserting mode for file %1").arg(filename));
+    }
 }
