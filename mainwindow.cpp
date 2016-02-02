@@ -514,24 +514,43 @@ void MainWindow::on_LoadButton_clicked()
                 }
                 //Mem Cart Plus parsing done
             }
-            else if (QByteArray(cbuf,96).right(16).startsWith("ACTION REPLAY"))
+            else //if image is not looking like a Mem Cart Plus, trying as Action Replay
             {
+                //but if it doesn't look like AR too, issue a warning
+                if (!(QByteArray(cbuf,96).right(16).startsWith("ACTION REPLAY")))
+                {
+                    QMessageBox msgBox;
+                    msgBox.setText(tr("This one neither looks like Memory Cart Plus, nor like Action Replay. I will try to import as Action Replay anyway."));
+                    msgBox.exec();
+                }
                 //supposing it's an Action Replay
+
+                //if image size provided is smaller than the one we decoded, expand it
+                if (TheConfig->m_iFileSize < 0x80000)
+                {
+                    TheConfig->m_iFileSize = 0x80000;
+                    TheConfig->SaveToRegistry();
+                    HugeRAM.resize(0x80000);
+                    QMessageBox msgBox;
+                    msgBox.setText(tr("Action Replay import: expanding image size to 512KB"));
+                    msgBox.exec();
+                }
 
                 //AR actually holds the full cart image in RLE-compressed format
                 //so we need to import it as-is, and then convert to user-provided
                 //culster size and image size
                 //ok, off we go
-
+                int iFileSize = file_in.size();
                 file_in.seek(0x20005);
                 file_in.read(cbuf,1);
                 unsigned char cActionReplayKey = (unsigned char)cbuf[0];
-                int iFileSize = file_in.size();
+                file_in.read(cbuf,4);
+                int iPackedSize = 0x1000000*(unsigned char)cbuf[0] + 0x10000*(unsigned char)cbuf[1] +
+                                  0x100*(unsigned char)cbuf[2] + (unsigned char)cbuf[3];
 
                 //now brutally unpacking it as a full image
-                file_in.seek(0x2000A);
                 int iPointer = 0;
-                while (file_in.pos() < iFileSize)
+                while (file_in.pos() < (0x20000+iPackedSize))
                 {
                     //AR format is compression-key-based
                     //key is a 8-bit value stored at the card beginning
@@ -572,19 +591,16 @@ void MainWindow::on_LoadButton_clicked()
                     HugeRAM.replace(16*i,16,QByteArray("BackUpRam Format"));
 
                 //okay, we inserted some existing image, now we try to convert it to user settings
-                //if image size provided is smaller than the one we decoded, expand it
-                if (TheConfig->m_iFileSize < 0x40000)
-                {
-                    TheConfig->m_iFileSize = 0x40000;
-                    TheConfig->SaveToRegistry();
-                    QMessageBox msgBox;
-                    msgBox.setText(tr("Action Replay import: expanding image size to ")+QString(TheConfig->m_iFileSize)+tr(". "));
-                    msgBox.exec();
-                }
+                int iUserCluserSize = TheConfig->m_iClusterSize;
                 //if cluster size is not 64, converting
-                if (TheConfig->m_iClusterSize != 64)
+                if (iUserCluserSize != 64)
                 {
-                    RepackImage(64,TheConfig->m_iClusterSize);
+                    TheConfig->m_iClusterSize = 64;
+                    TheConfig->SaveToRegistry();
+                    ParseHugeRAM();//required before repacking
+                    RepackImage(64,iUserCluserSize);
+                    TheConfig->m_iClusterSize = iUserCluserSize;
+                    TheConfig->SaveToRegistry();
                 }
                 //enable name sorting
                 iSortIndex = 0;
