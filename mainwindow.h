@@ -47,6 +47,8 @@ private slots:
 
     void on_RepackButton_clicked();
 
+    void RepackImage(int iOldClusterSize, int iNewClusterSize);
+
     void on_InsertButton_clicked();
 
     void on_ExtractButton_clicked();

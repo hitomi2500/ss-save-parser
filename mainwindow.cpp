@@ -306,7 +306,7 @@ void MainWindow::on_LoadButton_clicked()
     }
     //okay, file is opened, now detect its mode
     //first we try to find "BackUpRam Format" 16-byte signature as is
-    file_in.read(cbuf,32);
+    file_in.read(cbuf,128);
     if (QByteArray(cbuf,16).startsWith("BackUpRam Format"))
     {
         //raw mode detected
@@ -357,155 +357,245 @@ void MainWindow::on_LoadButton_clicked()
 
             int iLastUsedCluster=2;
 
-            //searching every 256 bytes
-            file_in.seek(0);
-            file_in.read(cbuf_prev,256);
-            int iFileSize = file_in.size();
-            while (iFileSize - file_in.pos()  > 256)
+            //there are 2 known formats now: memcardplus and AR
+            //MemCardPlus  contains "MEMORY CARTRIDGE" id at 0x50
+            //ActionReplay contains "ACTION REPLAY +U" id at 0x50
+            if (QByteArray(cbuf,96).right(16).startsWith("MEMORY CARTRIDGE"))
             {
-                //read next 256 bytes
-                file_in.read(cbuf,40);
-                //check if save
-                if ( (cbuf_prev[255]==-1) &&  (cbuf_prev[254]==-1) &&  (cbuf[0]!=-1) && (cbuf[22]==0) && (cbuf[23]==0))
+                //supposing it's a Memory Cart Plus
+                //searching every 256 bytes
+                file_in.seek(0);
+                file_in.read(cbuf_prev,256);
+                int iFileSize = file_in.size();
+                while (iFileSize - file_in.pos()  > 256)
                 {
-                    //check passed, inserting
-                    //datel format is compression-key-based
-                    //key is a unique 16-bit value at offset 34 in save
-                    //it never appears in original save (datel searches this value from 0x0000 to 0xFFFF
-                    //                                  most of the time it's 0x000X or 0x001X)
-                    //RLE sequences are 48-bit:
-                    //0xKKKK 0xXXXX 0xYYYY - write YYYY copies of XXXX, KKKK is key
-                    tmpSave.iBytes = (unsigned char)cbuf[31]+0x100*(unsigned char)cbuf[30]+0x10000*(unsigned char)cbuf[29]+0x1000000*(unsigned char)cbuf[28];
-                    int iCompressionKey = (unsigned char)cbuf[35]+0x100*(unsigned char)cbuf[34];
-                    int iCompressedBytes = (unsigned char)cbuf[39]+0x100*(unsigned char)cbuf[38]+0x10000*(unsigned char)cbuf[37]+0x1000000*(unsigned char)cbuf[36];
-                    int iDecompressedSize = 0;
-                    //check if we have enough space at the end of file
-                    //making a brutal check for inserting size:
-                    //each ClusterSize-4 requires additional 6 bytes (2 for SAT, 4 for header)
-                    //plus 36 additional (34 header, 2 zero-sat-entry)
-                    //if that won't fit into remaining clusters, boil out
-                    int iClustersRequired = (tmpSave.iBytes)/(TheConfig->m_iClusterSize-4);
-                    int iBytesRequired = tmpSave.iBytes+iClustersRequired*6+36;
-                    iClustersRequired = iBytesRequired/(TheConfig->m_iClusterSize-4);
-                    if ((TheConfig->m_iFileSize/TheConfig->m_iClusterSize - iLastUsedCluster) <= iClustersRequired)
+                    //read next 256 bytes
+                    file_in.read(cbuf,40);
+                    //check if save
+                    if ( (cbuf_prev[255]==-1) &&  (cbuf_prev[254]==-1) &&  (cbuf[0]!=-1) && (cbuf[22]==0) && (cbuf[23]==0))
                     {
-                        //decompression result is different
-                        QMessageBox msgBox;
-                        msgBox.setText(tr("Not enough space in image to insert ")+QString(tmpSave.Name)+tr(" and possibly some other saves. Please retry with a bigger image size."));
-                        msgBox.exec();
-                        //enable name sorting
-                        iSortIndex = 0;
-                        SortDir = SORT_ASCENDING;
-                        //parse
-                        ParseHugeRAM();
-                        return;
-                    }
-                    tmpSave.iStartCluster = iLastUsedCluster+1;
+                        //check passed, inserting
+                        //datel format is compression-key-based
+                        //key is a unique 16-bit value at offset 34 in save
+                        //it never appears in original save (datel searches this value from 0x0000 to 0xFFFF
+                        //                                  most of the time it's 0x000X or 0x001X)
+                        //RLE sequences are 48-bit:
+                        //0xKKKK 0xXXXX 0xYYYY - write YYYY copies of XXXX, KKKK is key
+                        tmpSave.iBytes = (unsigned char)cbuf[31]+0x100*(unsigned char)cbuf[30]+0x10000*(unsigned char)cbuf[29]+0x1000000*(unsigned char)cbuf[28];
+                        int iCompressionKey = (unsigned char)cbuf[35]+0x100*(unsigned char)cbuf[34];
+                        int iCompressedBytes = (unsigned char)cbuf[39]+0x100*(unsigned char)cbuf[38]+0x10000*(unsigned char)cbuf[37]+0x1000000*(unsigned char)cbuf[36];
+                        int iDecompressedSize = 0;
+                        //check if we have enough space at the end of file
+                        //making a brutal check for inserting size:
+                        //each ClusterSize-4 requires additional 6 bytes (2 for SAT, 4 for header)
+                        //plus 36 additional (34 header, 2 zero-sat-entry)
+                        //if that won't fit into remaining clusters, boil out
+                        int iClustersRequired = (tmpSave.iBytes)/(TheConfig->m_iClusterSize-4);
+                        int iBytesRequired = tmpSave.iBytes+iClustersRequired*6+36;
+                        iClustersRequired = iBytesRequired/(TheConfig->m_iClusterSize-4);
+                        if ((TheConfig->m_iFileSize/TheConfig->m_iClusterSize - iLastUsedCluster) <= iClustersRequired)
+                        {
+                            //decompression result is different
+                            QMessageBox msgBox;
+                            msgBox.setText(tr("Not enough space in image to insert ")+QString(tmpSave.Name)+tr(" and possibly some other saves. Please retry with a bigger image size."));
+                            msgBox.exec();
+                            //enable name sorting
+                            iSortIndex = 0;
+                            SortDir = SORT_ASCENDING;
+                            //parse
+                            ParseHugeRAM();
+                            return;
+                        }
+                        tmpSave.iStartCluster = iLastUsedCluster+1;
 
-                    //check done, go on
-                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0x80;
-                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1] = 0x0;
-                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2] = 0x0;
-                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3] = 0x0;//making up counter
-                    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+4,11,QByteArray(&cbuf[0],11));//name
-                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+15] = cbuf[11];//lang code
-                    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+16,10,QByteArray(&cbuf[12],10));//comment
-                    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+26,4,QByteArray(&cbuf[24],4));//date
-                    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+30,4,QByteArray(&cbuf[28],4));//size
-                    //calculate sat
-                    tmpSave.iSATSize = 1;
-                    tmpSave.Name = QByteArray(&cbuf[0],11);
-                    while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
+                        //check done, go on
+                        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0x80;
+                        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1] = 0x0;
+                        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2] = 0x0;
+                        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3] = 0x0;//making up counter
+                        HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+4,11,QByteArray(&cbuf[0],11));//name
+                        HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+15] = cbuf[11];//lang code
+                        HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+16,10,QByteArray(&cbuf[12],10));//comment
+                        HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+26,4,QByteArray(&cbuf[24],4));//date
+                        HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+30,4,QByteArray(&cbuf[28],4));//size
+                        //calculate sat
+                        tmpSave.iSATSize = 1;
+                        tmpSave.Name = QByteArray(&cbuf[0],11);
+                        while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
+                            tmpSave.iSATSize++;
+                        //fill new sat
                         tmpSave.iSATSize++;
-                    //fill new sat
-                    tmpSave.iSATSize++;
-                    for (int i=0;i<(tmpSave.iSATSize-1);i++)
-                        tmpSave.SAT[i] = tmpSave.iStartCluster+i+1;
-                    tmpSave.SAT[tmpSave.iSATSize-1] = 0;
-                    //copy SAT to hugeram
-                    int iPointer = tmpSave.iStartCluster*TheConfig->m_iClusterSize + 34;
-                    for (int i=0;i<tmpSave.iSATSize;i++)
-                    {
-                        if (iPointer % TheConfig->m_iClusterSize == 0)
+                        for (int i=0;i<(tmpSave.iSATSize-1);i++)
+                            tmpSave.SAT[i] = tmpSave.iStartCluster+i+1;
+                        tmpSave.SAT[tmpSave.iSATSize-1] = 0;
+                        //copy SAT to hugeram
+                        int iPointer = tmpSave.iStartCluster*TheConfig->m_iClusterSize + 34;
+                        for (int i=0;i<tmpSave.iSATSize;i++)
                         {
-                            HugeRAM[iPointer] = 0;
-                            HugeRAM[iPointer+1] = 0;
-                            HugeRAM[iPointer+2] = 0;
-                            HugeRAM[iPointer+3] = (unsigned char)tmpSave.cCounter;
-                            iPointer+=4;
+                            if (iPointer % TheConfig->m_iClusterSize == 0)
+                            {
+                                HugeRAM[iPointer] = 0;
+                                HugeRAM[iPointer+1] = 0;
+                                HugeRAM[iPointer+2] = 0;
+                                HugeRAM[iPointer+3] = (unsigned char)tmpSave.cCounter;
+                                iPointer+=4;
+                            }
+                            HugeRAM[iPointer] = (char) ( tmpSave.SAT[i] / 0x100 );
+                            HugeRAM[iPointer+1] = (char) ( tmpSave.SAT[i] % 0x100 );
+                            iPointer+=2;
                         }
-                        HugeRAM[iPointer] = (char) ( tmpSave.SAT[i] / 0x100 );
-                        HugeRAM[iPointer+1] = (char) ( tmpSave.SAT[i] % 0x100 );
-                        iPointer+=2;
-                    }
-                    //copy data
-                    int ic=0;
-                    while (ic<iCompressedBytes)
-                    //for (int i=0; i<iCompressedBytes; i+=2)
-                    {
-                        if (iPointer % TheConfig->m_iClusterSize == 0)
+                        //copy data
+                        int ic=0;
+                        while (ic<iCompressedBytes)
+                        //for (int i=0; i<iCompressedBytes; i+=2)
                         {
-                            HugeRAM[iPointer] = 0;
-                            HugeRAM[iPointer+1] = 0;
-                            HugeRAM[iPointer+2] = 0;
-                            HugeRAM[iPointer+3] = 0;//make up counter
-                            iPointer+=4;
-                        }
-                        file_in.read(cbuf,2);
-                        ic+=2;
-                        if ((unsigned char)cbuf[1]+0x100*(unsigned char)cbuf[0] == iCompressionKey)
-                        {
-                            //it's an RLE sequence!
-                            file_in.read(cbuf,4);
-                            ic+=4;
-                            for (int j=0;j<((unsigned char)cbuf[3]+0x100*(unsigned char)cbuf[2]);j++)
+                            if (iPointer % TheConfig->m_iClusterSize == 0)
+                            {
+                                HugeRAM[iPointer] = 0;
+                                HugeRAM[iPointer+1] = 0;
+                                HugeRAM[iPointer+2] = 0;
+                                HugeRAM[iPointer+3] = 0;//make up counter
+                                iPointer+=4;
+                            }
+                            file_in.read(cbuf,2);
+                            ic+=2;
+                            if ((unsigned char)cbuf[1]+0x100*(unsigned char)cbuf[0] == iCompressionKey)
+                            {
+                                //it's an RLE sequence!
+                                file_in.read(cbuf,4);
+                                ic+=4;
+                                for (int j=0;j<((unsigned char)cbuf[3]+0x100*(unsigned char)cbuf[2]);j++)
+                                {
+                                    HugeRAM[iPointer] = cbuf[0];
+                                    iPointer++;
+                                    HugeRAM[iPointer] = cbuf[1];
+                                    iPointer++;
+                                    iDecompressedSize+=2;
+                                    //if we catch cluster boundary while executing RLE sequence, insert sys header
+                                    if (iPointer % TheConfig->m_iClusterSize == 0)
+                                    {
+                                        HugeRAM[iPointer] = 0;
+                                        HugeRAM[iPointer+1] = 0;
+                                        HugeRAM[iPointer+2] = 0;
+                                        HugeRAM[iPointer+3] = 0;//make up counter
+                                        iPointer+=4;
+                                    }
+                                }
+                            }
+                            else
                             {
                                 HugeRAM[iPointer] = cbuf[0];
                                 iPointer++;
-                                HugeRAM[iPointer] = cbuf[1];
+                                HugeRAM[iPointer] = cbuf[1]; //this might be wrong for odd-sized saves, but cluster end is unused anyway, so who cares?
                                 iPointer++;
                                 iDecompressedSize+=2;
-                                //if we catch cluster boundary while executing RLE sequence, insert sys header
-                                if (iPointer % TheConfig->m_iClusterSize == 0)
-                                {
-                                    HugeRAM[iPointer] = 0;
-                                    HugeRAM[iPointer+1] = 0;
-                                    HugeRAM[iPointer+2] = 0;
-                                    HugeRAM[iPointer+3] = 0;//make up counter
-                                    iPointer+=4;
-                                }
                             }
+                        }
+                        if (iDecompressedSize != tmpSave.iBytes)
+                        {
+                            //decompression result is different
+                            QMessageBox msgBox;
+                            msgBox.setText(tr("Decompression error for ")+QString(tmpSave.Name)+tr(". Size should be %2, but decompressed into %3").arg(tmpSave.iBytes).arg(iDecompressedSize));
+                            msgBox.exec();
+                        }
+                        int iPos = file_in.pos() % 256;
+                        for (int i=0;i<iPos;i++)
+                            cbuf_prev[i] = HugeRAM[iPointer-iPos+i];
+                        file_in.read(&cbuf_prev[iPos],256-iPos);
+                        iLastUsedCluster+=tmpSave.iSATSize;
+                    }
+                    else
+                    {
+                        //not a save, just some 256 bytes of whatever
+                        //we readed already 40 bytes, 216 to go
+                        file_in.read(&cbuf[40],216);
+                        for (i=0;i<256;i++) cbuf_prev[i] = cbuf[i];
+                    }
+                }
+                //Mem Cart Plus parsing done
+            }
+            else if (QByteArray(cbuf,96).right(16).startsWith("ACTION REPLAY"))
+            {
+                //supposing it's an Action Replay
+
+                //AR actually holds the full cart image in RLE-compressed format
+                //so we need to import it as-is, and then convert to user-provided
+                //culster size and image size
+                //ok, off we go
+
+                file_in.seek(0x20005);
+                file_in.read(cbuf,1);
+                unsigned char cActionReplayKey = (unsigned char)cbuf[0];
+                int iFileSize = file_in.size();
+
+                //now brutally unpacking it as a full image
+                file_in.seek(0x2000A);
+                int iPointer = 0;
+                while (file_in.pos() < iFileSize)
+                {
+                    //AR format is compression-key-based
+                    //key is a 8-bit value stored at the card beginning
+                    //if it appears in oriinal save, it is encoded as KK 00
+                    //RLE sequences are 24-bit:
+                    //0xKK 0xXX 0xYY - write XX copies of YY, KK is key
+                    file_in.read(cbuf,1);
+                    if ((unsigned char)cbuf[0] == cActionReplayKey)
+                    {
+                        //it's an RLE sequence! which one?
+                        file_in.read(&(cbuf[1]),1);
+                        if ((unsigned char)cbuf[1] == 0x00)
+                        {
+                            //it's a KK 00 sequence, inserting single KK character
+                            HugeRAM[iPointer] = cbuf[0];//inserting KK
+                            iPointer++;
                         }
                         else
                         {
-                            HugeRAM[iPointer] = cbuf[0];
-                            iPointer++;
-                            HugeRAM[iPointer] = cbuf[1]; //this might be wrong for odd-sized saves, but cluster end is unused anyway, so who cares?
-                            iPointer++;
-                            iDecompressedSize+=2;
+                            //it's a KK XX YY sequence
+                            file_in.read(&(cbuf[2]),1);
+                            for (int j=0;j<((unsigned char)cbuf[1]);j++)
+                            {
+                                HugeRAM[iPointer] = cbuf[2];
+                                iPointer++;
+                            }
                         }
                     }
-                    if (iDecompressedSize != tmpSave.iBytes)
+                    else
                     {
-                        //decompression result is different
-                        QMessageBox msgBox;
-                        msgBox.setText(tr("Decompression error for ")+QString(tmpSave.Name)+tr(". Size should be %2, but decompressed into %3").arg(tmpSave.iBytes).arg(iDecompressedSize));
-                        msgBox.exec();
+                        //it's not an RLE sequence, just a databyte
+                        HugeRAM[iPointer] = cbuf[0];//inserting databyte
+                        iPointer++;
                     }
-                    int iPos = file_in.pos() % 256;
-                    for (int i=0;i<iPos;i++)
-                        cbuf_prev[i] = HugeRAM[iPointer-iPos+i];
-                    file_in.read(&cbuf_prev[iPos],256-iPos);
-                    iLastUsedCluster+=tmpSave.iSATSize;
                 }
-                else
+                //add headr
+                for (i=0;i<4;i++)
+                    HugeRAM.replace(16*i,16,QByteArray("BackUpRam Format"));
+
+                //okay, we inserted some existing image, now we try to convert it to user settings
+                //if image size provided is smaller than the one we decoded, expand it
+                if (TheConfig->m_iFileSize < 0x40000)
                 {
-                    //not a save, just some 256 bytes of whatever
-                    //we readed already 40 bytes, 216 to go
-                    file_in.read(&cbuf[40],216);
-                    for (i=0;i<256;i++) cbuf_prev[i] = cbuf[i];
+                    TheConfig->m_iFileSize = 0x40000;
+                    TheConfig->SaveToRegistry();
+                    QMessageBox msgBox;
+                    msgBox.setText(tr("Action Replay import: expanding image size to ")+QString(TheConfig->m_iFileSize)+tr(". "));
+                    msgBox.exec();
                 }
+                //if cluster size is not 64, converting
+                if (TheConfig->m_iClusterSize != 64)
+                {
+                    RepackImage(64,TheConfig->m_iClusterSize);
+                }
+                //enable name sorting
+                iSortIndex = 0;
+                SortDir = SORT_ASCENDING;
+                //parse
+                ParseHugeRAM();
+                return;
+
+                //Action Replay parsing done
             }
+
             //enable name sorting
             iSortIndex = 0;
             SortDir = SORT_ASCENDING;
@@ -685,14 +775,9 @@ void MainWindow::on_SaveButton_clicked()
 
 void MainWindow::on_RepackButton_clicked()
 {
-    int iReadPointer;
-    int iWritePointer;
     //int iWriteCluster;
     int iNewClusterSize;
     int iOldClusterSize;
-    int iNewStartCluster;
-    QByteArray HugeRAM2;
-    HugeRAM2.clear();
     TheConfig->LoadFromRegistry();
     iOldClusterSize = TheConfig->m_iClusterSize;
     //getting whatever cluster size user wants
@@ -702,7 +787,6 @@ void MainWindow::on_RepackButton_clicked()
     FileIOSettingsDialog IOcheckDialog(&IOSettings);
     if (IOcheckDialog.exec() == QDialog::Rejected) return;
 
-    //repacking image file
     switch (IOSettings.IOClusterSize)
     {
     case CLUSTER_512:
@@ -720,6 +804,26 @@ void MainWindow::on_RepackButton_clicked()
     default :
         iNewClusterSize = 512;
     }
+
+    RepackImage(iOldClusterSize,iNewClusterSize);
+
+    //update config
+    TheConfig->m_iClusterSize = iNewClusterSize;
+    TheConfig->SaveToRegistry();
+    //reparse all the saves
+    ParseHugeRAM();
+    ui->statusBar->showMessage(tr("Repacked to cluster size %1 bytes").arg(TheConfig->m_iClusterSize));
+}
+
+void MainWindow::RepackImage(int iOldClusterSize, int iNewClusterSize)
+{
+    int iReadPointer;
+    int iWritePointer;
+    int iNewStartCluster;
+    QByteArray HugeRAM2;
+    HugeRAM2.clear();
+
+    //repacking image file
 
     //copy signature
     for (int i=0;i<iNewClusterSize/16;i++)
@@ -821,12 +925,6 @@ void MainWindow::on_RepackButton_clicked()
     //copy back
     HugeRAM.clear();
     HugeRAM.append(HugeRAM2);
-    //update config
-    TheConfig->m_iClusterSize = iNewClusterSize;
-    TheConfig->SaveToRegistry();
-    //reparse all the saves
-    ParseHugeRAM();
-    ui->statusBar->showMessage(tr("Repacked to cluster size %1 bytes").arg(TheConfig->m_iClusterSize));
 }
 
 void MainWindow::on_ExtractButton_clicked()
