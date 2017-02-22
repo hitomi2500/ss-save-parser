@@ -970,6 +970,14 @@ void MainWindow::on_ExtractButton_clicked()
         return;
     }
 
+    //issue a warning if SAT is off and sys are on
+    if ( (TheConfig->m_bExtractSAT==false) && ( (TheConfig->m_bExtractSys) || (TheConfig->m_bExtractSysAll) ) )
+    {
+        QMessageBox msgBox;
+        msgBox.setText(tr("You're trying to do something strange saving headers and NOT saving SAT. This is possible setup all right, it will be extracted and inserted successfully, but data inside looks stupidly unrelated. I will continue, but you've been warned."));
+        msgBox.exec();
+    }
+
     //get selected save or save range
     int iStart = ui->tableWidget->selectedRanges().at(0).topRow();
     int iEnd = ui->tableWidget->selectedRanges().at(0).bottomRow();
@@ -998,14 +1006,6 @@ void MainWindow::on_ExtractButton_clicked()
         else return; //return if user cancel
     }
     //file/folder opened, move on
-
-    //issue a warning if SAT is off and sys are on
-    if ( (TheConfig->m_bExtractSAT==false) && ( (TheConfig->m_bExtractSys) || (TheConfig->m_bExtractSysAll) ) )
-    {
-        QMessageBox msgBox;
-        msgBox.setText(tr("You're trying to do something strange saving headers and NOT saving SAT. This is possible setup all right, it will be extracted and inserted successfully, but data inside looks stupidly unrelated. I will continue, but you've been warned."));
-        msgBox.exec();
-    }
 
     //copy extractwin's config from current one
     if (TheConfig->m_bAskFormatAtEveryExtract)
@@ -1041,6 +1041,8 @@ void MainWindow::on_ExtractButton_clicked()
             //getting temporal config from it
             *TheConfig = *(SetupWinExtract->SetupConfig);
         }
+        //get container to fill for every save, open container setup window
+
         //1st cluster
         if (TheConfig->m_bExtractSys)
         {

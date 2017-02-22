@@ -17,12 +17,14 @@ SetupWindow::SetupWindow(QWidget *parent, int SetupType) :
     ui->comboBox_ExtractMode->addItem(tr("Raw"));
     ui->comboBox_ExtractMode->addItem(tr("Druid II mode"));
     ui->comboBox_ExtractMode->addItem(tr("Manual"));
+    ui->comboBox_ExtractMode->addItem(tr("Container mode"));
     ui->comboBox_InsertMode->addItem(tr("SSF mode"));
     ui->comboBox_InsertMode->addItem(tr("AR-like"));
     ui->comboBox_InsertMode->addItem(tr("Full"));
     ui->comboBox_InsertMode->addItem(tr("Raw"));
     ui->comboBox_InsertMode->addItem(tr("Druid II mode"));
     ui->comboBox_InsertMode->addItem(tr("Manual"));
+    ui->comboBox_InsertMode->addItem(tr("Container mode"));
     QImage img(QSize(10,10),QImage::Format_RGB32);
     img.fill(QColor(0,0,0));
     for (i=1;i<9;i++) for (j=1;j<9;j++) img.setPixel(QPoint(i,j),0xFF0000);//sys header - red
@@ -56,6 +58,9 @@ SetupWindow::SetupWindow(QWidget *parent, int SetupType) :
     for (i=1;i<9;i++) for (j=1;j<9;j++) img.setPixel(QPoint(i,j),0xFFFFFF);//empty - white
     ui->label_Extract_L11->setPixmap(QPixmap::fromImage(img));
     ui->label_Insert_L11->setPixmap(QPixmap::fromImage(img));
+    for (i=1;i<9;i++) for (j=1;j<9;j++) img.setPixel(QPoint(i,j),0x808080);//container - some shit
+    ui->label_Extract_L12->setPixmap(QPixmap::fromImage(img));
+    ui->label_Insert_L12->setPixmap(QPixmap::fromImage(img));
     this->setWindowTitle(this->windowTitle().append(" ").append(APP_VERSION));
     ui->label->setPixmap(QPixmap(":/images/blue_arrow.xpm"));
     ui->label_4->setPixmap(QPixmap(":/images/blue_arrow.xpm"));
@@ -138,7 +143,7 @@ void SetupWindow::UpdateFromConfig()
             ui->checkBox_ExtractSysAll->setDisabled(true);
             ui->checkBox_ExtractSysAll->setChecked(true);
             break;
-        case ExtractFull:
+    case ExtractFull:
             ui->comboBox_ExtractMode->setCurrentIndex(2);
             ui->checkBox_ExtractSys->setDisabled(true);
             ui->checkBox_ExtractSys->setChecked(true);
@@ -222,6 +227,28 @@ void SetupWindow::UpdateFromConfig()
             ui->checkBox_ExtractSysAll->setDisabled(false);
             ui->checkBox_ExtractSysAll->setChecked(SetupConfig->m_bExtractSysAll);
             break;
+    case ExtractContainer:
+            ui->comboBox_ExtractMode->setCurrentIndex(6);
+            ui->checkBox_ExtractSys->setDisabled(true);
+            ui->checkBox_ExtractSys->setChecked(true);
+            ui->checkBox_FillSysZeros->setDisabled(true);
+            ui->checkBox_FillSysZeros->setChecked(false);
+            ui->checkBox_ExtractName->setDisabled(true);
+            ui->checkBox_ExtractName->setChecked(true);
+            ui->checkBox_ExtractComment->setDisabled(true);
+            ui->checkBox_ExtractComment->setChecked(true);
+            ui->checkBox_ExtractDateTime->setDisabled(true);
+            ui->checkBox_ExtractDateTime->setChecked(true);
+            ui->checkBox_ExtractSize->setDisabled(true);
+            ui->checkBox_ExtractSize->setChecked(true);
+            ui->checkBox_ExtractSAT->setDisabled(true);
+            ui->checkBox_ExtractSAT->setChecked(true);
+            ui->checkBox_ExtractLanguage->setDisabled(true);
+            ui->checkBox_ExtractLanguage->setChecked(true);
+            ui->checkBox_ExtractSysAll->setDisabled(true);
+            ui->checkBox_ExtractSysAll->setChecked(true);
+            break;
+
     }
 
     switch (SetupConfig->m_InsertMode)
@@ -352,7 +379,28 @@ void SetupWindow::UpdateFromConfig()
             ui->checkBox_InsertSAT->setDisabled(false);
             ui->checkBox_InsertSAT->setChecked(SetupConfig->m_bInsertSAT);
             break;
-   }
+        case InsertContainer:
+            ui->comboBox_InsertMode->setCurrentIndex(6);
+            ui->checkBox_InsertSys->setDisabled(true);
+            ui->checkBox_InsertSys->setChecked(true);
+            ui->checkBox_InsertSysAll->setDisabled(true);
+            ui->checkBox_InsertSysAll->setChecked(true);
+            ui->checkBox_InsertSysUseCounter->setDisabled(true);
+            ui->checkBox_InsertSysUseCounter->setChecked(true);
+            ui->checkBox_InsertName->setDisabled(true);
+            ui->checkBox_InsertName->setChecked(true);
+            ui->checkBox_InsertLanguage->setDisabled(true);
+            ui->checkBox_InsertLanguage->setChecked(true);
+            ui->checkBox_InsertComment->setDisabled(true);
+            ui->checkBox_InsertComment->setChecked(true);
+            ui->checkBox_InsertDatetime->setDisabled(true);
+            ui->checkBox_InsertDatetime->setChecked(true);
+            ui->checkBox_InsertSize->setDisabled(true);
+            ui->checkBox_InsertSize->setChecked(true);
+            ui->checkBox_InsertSAT->setDisabled(true);
+            ui->checkBox_InsertSAT->setChecked(true);
+            break;
+    }
 
     switch (SetupConfig->m_DeleteMode)
     {
@@ -440,7 +488,7 @@ void SetupWindow::UpdateFromConfig()
         iCurrentPos++;
     }
     //draw data, making it overwriting cluster for clarity
-    for (int i=0;i<250;i++)
+    for (int i=0;i<220;i++)
     {
         if (iCurrentPos%64 == 0)
         {
@@ -466,6 +514,13 @@ void SetupWindow::UpdateFromConfig()
     //draw grid
     for (int i=0;i<=16;i++) MyLittlePainter.drawLine(QPoint(i*11,0),QPoint(i*11,275));
     for (int i=0;i<=25;i++) MyLittlePainter.drawLine(QPoint(0,i*11),QPoint(177,i*11));
+    //draw container metadata
+    if (SetupConfig->m_bExtractContainer)
+        for (int i=0;i<16;i++)
+        {
+            MyLittlePainter.fillRect(1+11*(iCurrentPos%16),1+11*(iCurrentPos/16),10,10,QBrush(Qt::darkGray,Qt::SolidPattern));
+            iCurrentPos++;
+        }
     //draw header
     if (SetupConfig->m_bExtractSys)
     {
@@ -486,9 +541,10 @@ void SetupWindow::UpdateFromConfig()
                 iCurrentPos++;
             }
             //header start
-            MyLittlePainter.fillRect(3,3,6,6,QBrush(Qt::green,Qt::SolidPattern));
+            MyLittlePainter.fillRect(3+11*((iCurrentPos-4)%16),3+11*((iCurrentPos-4)/16),6,6,QBrush(Qt::green,Qt::SolidPattern));
+
             //header counter
-            MyLittlePainter.fillRect(36,3,6,6,QBrush(Qt::yellow,Qt::SolidPattern));
+            MyLittlePainter.fillRect(3+11*((iCurrentPos-1)%16),3+11*((iCurrentPos-1)/16),6,6,QBrush(Qt::yellow,Qt::SolidPattern));
         }
     }
     if (SetupConfig->m_bExtractName)
@@ -591,7 +647,7 @@ void SetupWindow::UpdateFromConfig()
         iCurrentPosAtImage++;
     }
     //draw data, making it overwriting cluster for clarity
-    for (int i=0;i<250;i++)
+    for (int i=0;i<220;i++)
     {
         if (iCurrentPosAtImage%64 == 0)
         {
@@ -633,6 +689,13 @@ void SetupWindow::UpdateFromConfig()
     //draw grid
     for (int i=0;i<=16;i++) MyLittlePainter.drawLine(QPoint(i*11,0),QPoint(i*11,275));
     for (int i=0;i<=25;i++) MyLittlePainter.drawLine(QPoint(0,i*11),QPoint(177,i*11));
+    //draw container metadata
+    if (SetupConfig->m_bInsertContainer)
+        for (int i=0;i<16;i++)
+        {
+            MyLittlePainter.fillRect(1+11*(iCurrentPos%16),1+11*(iCurrentPos/16),10,10,QBrush(Qt::darkGray,Qt::SolidPattern));
+            iCurrentPos++;
+        }
     //draw header
     if (SetupConfig->m_bInsertSys)
     {
@@ -643,11 +706,12 @@ void SetupWindow::UpdateFromConfig()
             iCurrentPos++;
         }
         //header start
-        MyLittlePainter.fillRect(3,3,6,6,QBrush(Qt::green,Qt::SolidPattern));
+        MyLittlePainter.fillRect(3+11*((iCurrentPos-4)%16),3+11*((iCurrentPos-4)/16),6,6,QBrush(Qt::green,Qt::SolidPattern));
+
         if (SetupConfig->m_bInsertSysUseCounter)
         {
             //header counter
-            MyLittlePainter.fillRect(36,3,6,6,QBrush(Qt::yellow,Qt::SolidPattern));
+            MyLittlePainter.fillRect(3+11*((iCurrentPos-1)%16),3+11*((iCurrentPos-1)/16),6,6,QBrush(Qt::yellow,Qt::SolidPattern));
         }
         else
         {
@@ -755,7 +819,7 @@ void SetupWindow::UpdateFromConfig()
         iCurrentPosAtImage++;
     }
     //draw data, making it overwriting cluster for clarity
-    for (int i=0;i<250;i++)
+    for (int i=0;i<220;i++)
     {
         if (iCurrentPosAtImage%64 == 0)
         {
@@ -819,6 +883,9 @@ void SetupWindow::on_comboBox_ExtractMode_currentIndexChanged(int index)
         case 5 :
             SetupConfig->m_ExtractMode = ExtractManual;
             break;
+        case 6 :
+            SetupConfig->m_ExtractMode = ExtractContainer;
+            break;
     }
     SetupConfig->UpdateFlags();
     UpdateFromConfig();
@@ -845,6 +912,9 @@ void SetupWindow::on_comboBox_InsertMode_currentIndexChanged(int index)
             break;
         case 5 :
             SetupConfig->m_InsertMode = InsertManual;
+            break;
+        case 6 :
+            SetupConfig->m_InsertMode = InsertContainer;
             break;
     }
     SetupConfig->UpdateFlags();
