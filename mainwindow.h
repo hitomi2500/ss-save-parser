@@ -39,9 +39,9 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_Sort_Order_Changed(int logicalIndex);
+    void Sort_Order_Changed(int logicalIndex);
 
-    void on_Setup_Accepted();
+    void Setup_Accepted();
 
     void on_SetupButton_clicked();
 

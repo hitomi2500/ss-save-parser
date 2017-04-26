@@ -64,11 +64,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->tableWidget->horizontalHeader(),
             SIGNAL(sectionClicked(int)),
             this,
-            SLOT(on_Sort_Order_Changed(int)));
+            SLOT(Sort_Order_Changed(int)));
     connect(SetupWin,
             SIGNAL(accepted()),
             this,
-            SLOT(on_Setup_Accepted()));
+            SLOT(Setup_Accepted()));
     //allocating new saveram
     TheConfig->LoadFromRegistry();
     TheConfig->m_iClusterSize=512;//default
@@ -1742,7 +1742,7 @@ void MainWindow::on_DeleteButton_clicked()
     ui->statusBar->showMessage(tr("Save deleted"));
 }
 
-void MainWindow::on_Sort_Order_Changed(int logicalIndex)
+void MainWindow::Sort_Order_Changed(int logicalIndex)
 {
     if (iSortIndex == logicalIndex)
     {
@@ -1764,7 +1764,7 @@ void MainWindow::on_Sort_Order_Changed(int logicalIndex)
     ParseHugeRAM();
 }
 
-void MainWindow::on_Setup_Accepted()
+void MainWindow::Setup_Accepted()
 {
     ParseHugeRAM();
 }
