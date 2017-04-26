@@ -23,6 +23,8 @@ private slots:
     void on_buttonBox_accepted();
 
 
+    void on_ImageSizeSpinBox_editingFinished();
+
 private:
     Ui::NewDialog *ui;
     NewSettingsType * m_pSettings;

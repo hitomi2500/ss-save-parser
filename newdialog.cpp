@@ -1,3 +1,4 @@
+#include <QMessageBox>
 #include "newdialog.h"
 #include "ui_newdialog.h"
 
@@ -78,4 +79,15 @@ void NewDialog::on_buttonBox_accepted()
     m_Settings.iImageSize = ui->ImageSizeSpinBox->value();
     m_Settings.iIOCustomClusterSize = ui->CustomClusterSizeSpinBox->value();
     m_pSettings[0] = m_Settings;
+}
+
+void NewDialog::on_ImageSizeSpinBox_editingFinished()
+{
+    if (ui->ImageSizeSpinBox->value() > 16384)
+    {
+        QMessageBox msgBox;
+        msgBox.setText(tr("Image size is too big. Saturn's hard limit is 16MBytes (128MBit) "));
+        msgBox.exec();
+        ui->ImageSizeSpinBox->setValue(16384);
+    }
 }
