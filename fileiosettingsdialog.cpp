@@ -25,7 +25,10 @@ FileIOSettingsDialog::FileIOSettingsDialog(FileIOSettingsType *settings, QWidget
     else if (CLUSTER_64 == m_Settings.IOClusterSize)
         ui->ClusterSizeComboBox->setCurrentIndex(2);
     else if (CLUSTER_CUSTOM == m_Settings.IOClusterSize)
+    {
         ui->ClusterSizeComboBox->setCurrentIndex(3);
+        ui->CustomClusterSizeSpinBox->setValue(m_Settings.iIOCustomClusterSize);
+    }
     if (m_Settings.bIOModeChangeable)
     {
         ui->label->setDisabled(false);

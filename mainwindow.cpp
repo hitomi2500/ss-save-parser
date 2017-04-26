@@ -688,6 +688,10 @@ void MainWindow::on_LoadButton_clicked()
     HugeRAM.reserve(TheConfig->m_iFileSize);
     switch (j)
     {
+    //everything with a claster less than 64 is treated as 64
+    case 1:
+    case 2:
+    case 3:
     case 4:
         IOSettings.IOClusterSize = CLUSTER_64;
         break;
