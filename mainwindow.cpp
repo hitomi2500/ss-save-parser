@@ -64,11 +64,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->tableWidget->horizontalHeader(),
             SIGNAL(sectionClicked(int)),
             this,
-            SLOT(on_Sort_Order_Changed(int)));
+            SLOT(Sort_Order_Changed(int)));
     connect(SetupWin,
             SIGNAL(accepted()),
             this,
-            SLOT(on_Setup_Accepted()));
+            SLOT(Setup_Accepted()));
     //allocating new saveram
     TheConfig->LoadFromRegistry();
     TheConfig->m_iClusterSize=512;//default
@@ -395,7 +395,7 @@ void MainWindow::on_LoadButton_clicked()
                         iClustersRequired = iBytesRequired/(TheConfig->m_iClusterSize-4);
                         if ((TheConfig->m_iFileSize/TheConfig->m_iClusterSize - iLastUsedCluster) <= iClustersRequired)
                         {
-                            //decompression result is different
+                            //no space left in image to decompress into
                             QMessageBox msgBox;
                             msgBox.setText(tr("Not enough space in image to insert ")+QString(tmpSave.Name)+tr(" and possibly some other saves. Please retry with a bigger image size."));
                             msgBox.exec();
@@ -447,7 +447,6 @@ void MainWindow::on_LoadButton_clicked()
                         //copy data
                         int ic=0;
                         while (ic<iCompressedBytes)
-                        //for (int i=0; i<iCompressedBytes; i+=2)
                         {
                             if (iPointer % TheConfig->m_iClusterSize == 0)
                             {
@@ -541,12 +540,45 @@ void MainWindow::on_LoadButton_clicked()
                 //culster size and image size
                 //ok, off we go
                 int iFileSize = file_in.size();
-                file_in.seek(0x20005);
-                file_in.read(cbuf,1);
-                unsigned char cActionReplayKey = (unsigned char)cbuf[0];
-                file_in.read(cbuf,4);
-                int iPackedSize = 0x1000000*(unsigned char)cbuf[0] + 0x10000*(unsigned char)cbuf[1] +
-                                  0x100*(unsigned char)cbuf[2] + (unsigned char)cbuf[3];
+                //parsing sequences
+                int iHeadersEnd = 0x20000;
+                file_in.seek(iHeadersEnd);
+                bool bHeaderFound;
+                int iPackedSize=-1;
+                int iUnpackedSize=-1;
+                unsigned char cActionReplayKey;
+                unsigned char cActionReplayKey2;
+                bool bKey2Used = false;
+                do
+                {
+                    bHeaderFound = false;
+                    file_in.read(cbuf,5);
+                    if (QByteArray(cbuf).startsWith("RLE01"))
+                    {
+                        //RLE01 header, parsing
+                        bHeaderFound = true;
+                        file_in.read(cbuf,1);
+                        cActionReplayKey = (unsigned char)cbuf[0];
+                        file_in.read(cbuf,4);
+                        iPackedSize = 0x1000000*(unsigned char)cbuf[0] + 0x10000*(unsigned char)cbuf[1] +
+                                          0x100*(unsigned char)cbuf[2] + (unsigned char)cbuf[3];
+                        iHeadersEnd+=10;//size of RLE01 header
+                    }
+                    else if (QByteArray(cbuf).startsWith("DEF02"))
+                    {
+                        //DEF02 header, parsing
+                        bHeaderFound = true;
+                        file_in.read(cbuf,1);
+                        cActionReplayKey2 = (unsigned char)cbuf[0];
+                        bKey2Used = true;
+                        file_in.read(cbuf,4);
+                        iUnpackedSize = 0x1000000*(unsigned char)cbuf[0] + 0x10000*(unsigned char)cbuf[1] +
+                                          0x100*(unsigned char)cbuf[2] + (unsigned char)cbuf[3];
+                        iHeadersEnd+=10;//size of RLE01 header
+                    }
+                }while (bHeaderFound);
+
+                file_in.seek(iHeadersEnd);
 
                 //now brutally unpacking it as a full image
                 int iPointer = 0;
@@ -578,6 +610,11 @@ void MainWindow::on_LoadButton_clicked()
                                 iPointer++;
                             }
                         }
+                    }
+                    else if (bKey2Used && ((unsigned char)cbuf[0] == cActionReplayKey2))
+                    {
+                        //that's a 2nd AR key, don't understand what it does yet
+                        iPointer+=2;
                     }
                     else
                     {
@@ -688,6 +725,10 @@ void MainWindow::on_LoadButton_clicked()
     HugeRAM.reserve(TheConfig->m_iFileSize);
     switch (j)
     {
+    //everything with a claster less than 64 is treated as 64
+    case 1:
+    case 2:
+    case 3:
     case 4:
         IOSettings.IOClusterSize = CLUSTER_64;
         break;
@@ -970,6 +1011,14 @@ void MainWindow::on_ExtractButton_clicked()
         return;
     }
 
+    //issue a warning if SAT is off and sys are on
+    if ( (TheConfig->m_bExtractSAT==false) && ( (TheConfig->m_bExtractSys) || (TheConfig->m_bExtractSysAll) ) )
+    {
+        QMessageBox msgBox;
+        msgBox.setText(tr("You're trying to do something strange saving headers and NOT saving SAT. This is possible setup all right, it will be extracted and inserted successfully, but data inside looks stupidly unrelated. I will continue, but you've been warned."));
+        msgBox.exec();
+    }
+
     //get selected save or save range
     int iStart = ui->tableWidget->selectedRanges().at(0).topRow();
     int iEnd = ui->tableWidget->selectedRanges().at(0).bottomRow();
@@ -998,14 +1047,6 @@ void MainWindow::on_ExtractButton_clicked()
         else return; //return if user cancel
     }
     //file/folder opened, move on
-
-    //issue a warning if SAT is off and sys are on
-    if ( (TheConfig->m_bExtractSAT==false) && ( (TheConfig->m_bExtractSys) || (TheConfig->m_bExtractSysAll) ) )
-    {
-        QMessageBox msgBox;
-        msgBox.setText(tr("You're trying to do something strange saving headers and NOT saving SAT. This is possible setup all right, it will be extracted and inserted successfully, but data inside looks stupidly unrelated. I will continue, but you've been warned."));
-        msgBox.exec();
-    }
 
     //copy extractwin's config from current one
     if (TheConfig->m_bAskFormatAtEveryExtract)
@@ -1041,6 +1082,8 @@ void MainWindow::on_ExtractButton_clicked()
             //getting temporal config from it
             *TheConfig = *(SetupWinExtract->SetupConfig);
         }
+        //get container to fill for every save, open container setup window
+
         //1st cluster
         if (TheConfig->m_bExtractSys)
         {
@@ -1740,7 +1783,7 @@ void MainWindow::on_DeleteButton_clicked()
     ui->statusBar->showMessage(tr("Save deleted"));
 }
 
-void MainWindow::on_Sort_Order_Changed(int logicalIndex)
+void MainWindow::Sort_Order_Changed(int logicalIndex)
 {
     if (iSortIndex == logicalIndex)
     {
@@ -1762,7 +1805,7 @@ void MainWindow::on_Sort_Order_Changed(int logicalIndex)
     ParseHugeRAM();
 }
 
-void MainWindow::on_Setup_Accepted()
+void MainWindow::Setup_Accepted()
 {
     ParseHugeRAM();
 }
