@@ -395,7 +395,7 @@ void MainWindow::on_LoadButton_clicked()
                         iClustersRequired = iBytesRequired/(TheConfig->m_iClusterSize-4);
                         if ((TheConfig->m_iFileSize/TheConfig->m_iClusterSize - iLastUsedCluster) <= iClustersRequired)
                         {
-                            //decompression result is different
+                            //no space left in image to decompress into
                             QMessageBox msgBox;
                             msgBox.setText(tr("Not enough space in image to insert ")+QString(tmpSave.Name)+tr(" and possibly some other saves. Please retry with a bigger image size."));
                             msgBox.exec();
@@ -447,7 +447,6 @@ void MainWindow::on_LoadButton_clicked()
                         //copy data
                         int ic=0;
                         while (ic<iCompressedBytes)
-                        //for (int i=0; i<iCompressedBytes; i+=2)
                         {
                             if (iPointer % TheConfig->m_iClusterSize == 0)
                             {
@@ -541,12 +540,45 @@ void MainWindow::on_LoadButton_clicked()
                 //culster size and image size
                 //ok, off we go
                 int iFileSize = file_in.size();
-                file_in.seek(0x20005);
-                file_in.read(cbuf,1);
-                unsigned char cActionReplayKey = (unsigned char)cbuf[0];
-                file_in.read(cbuf,4);
-                int iPackedSize = 0x1000000*(unsigned char)cbuf[0] + 0x10000*(unsigned char)cbuf[1] +
-                                  0x100*(unsigned char)cbuf[2] + (unsigned char)cbuf[3];
+                //parsing sequences
+                int iHeadersEnd = 0x20000;
+                file_in.seek(iHeadersEnd);
+                bool bHeaderFound;
+                int iPackedSize=-1;
+                int iUnpackedSize=-1;
+                unsigned char cActionReplayKey;
+                unsigned char cActionReplayKey2;
+                bool bKey2Used = false;
+                do
+                {
+                    bHeaderFound = false;
+                    file_in.read(cbuf,5);
+                    if (QByteArray(cbuf).startsWith("RLE01"))
+                    {
+                        //RLE01 header, parsing
+                        bHeaderFound = true;
+                        file_in.read(cbuf,1);
+                        cActionReplayKey = (unsigned char)cbuf[0];
+                        file_in.read(cbuf,4);
+                        iPackedSize = 0x1000000*(unsigned char)cbuf[0] + 0x10000*(unsigned char)cbuf[1] +
+                                          0x100*(unsigned char)cbuf[2] + (unsigned char)cbuf[3];
+                        iHeadersEnd+=10;//size of RLE01 header
+                    }
+                    else if (QByteArray(cbuf).startsWith("DEF02"))
+                    {
+                        //DEF02 header, parsing
+                        bHeaderFound = true;
+                        file_in.read(cbuf,1);
+                        cActionReplayKey2 = (unsigned char)cbuf[0];
+                        bKey2Used = true;
+                        file_in.read(cbuf,4);
+                        iUnpackedSize = 0x1000000*(unsigned char)cbuf[0] + 0x10000*(unsigned char)cbuf[1] +
+                                          0x100*(unsigned char)cbuf[2] + (unsigned char)cbuf[3];
+                        iHeadersEnd+=10;//size of RLE01 header
+                    }
+                }while (bHeaderFound);
+
+                file_in.seek(iHeadersEnd);
 
                 //now brutally unpacking it as a full image
                 int iPointer = 0;
@@ -578,6 +610,11 @@ void MainWindow::on_LoadButton_clicked()
                                 iPointer++;
                             }
                         }
+                    }
+                    else if (bKey2Used && ((unsigned char)cbuf[0] == cActionReplayKey2))
+                    {
+                        //that's a 2nd AR key, don't understand what it does yet
+                        iPointer+=2;
                     }
                     else
                     {
