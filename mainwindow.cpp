@@ -354,8 +354,10 @@ void MainWindow::on_LoadButton_clicked()
 
         //there are 2 known formats now: memcardplus and AR
         //MemCardPlus  contains "MEMORY CARTRIDGE" id at 0x50
+        //EMS 8 Meg card  contains "NEW 8 MEG RAM CARD+" id at 0x60 and is compatible with MemCardPlus
         //ActionReplay contains "ACTION REPLAY +U" id at 0x50
-        if (QByteArray(cbuf,96).right(16).startsWith("MEMORY CARTRIDGE"))
+        if ( (QByteArray(cbuf,96).right(16).startsWith("MEMORY CARTRIDGE")) ||
+             (QByteArray(cbuf,115).right(19).startsWith("NEW 8 MEG RAM CARD+")) )
         {
             //supposing it's a Memory Cart Plus
             QMessageBox msgBox;
