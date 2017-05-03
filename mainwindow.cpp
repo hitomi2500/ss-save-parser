@@ -613,8 +613,27 @@ void MainWindow::on_LoadButton_clicked()
                     }
                     else if (bKey2Used && ((unsigned char)cbuf[0] == cActionReplayKey2))
                     {
-                        //that's a 2nd AR key, don't understand what it does yet
-                        iPointer+=2;
+                        //it's a key2 RLE sequence
+                        file_in.read(&(cbuf[1]),1);
+                        if ((unsigned char)cbuf[1] == 0x00)
+                        {
+                            //it's a KK 00 sequence, inserting single KK character
+                            HugeRAM[iPointer] = cbuf[0];//inserting KK
+                            iPointer++;
+                        }
+                        else
+                        {
+                            //it's a KK XX YY DD sequence
+                            //DD is an unknown field.
+                            //DD could be a dummy data, redundacy data, checksum, or something else
+                            //but the fact is DD is not needed for decompression
+                            file_in.read(&(cbuf[2]),2);
+                            for (int j=0;j<((unsigned char)cbuf[1]);j++)
+                            {
+                                HugeRAM[iPointer] = cbuf[2];
+                                iPointer++;
+                            }
+                        }
                     }
                     else
                     {
