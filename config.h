@@ -4,8 +4,8 @@
 #include <QSettings>
 #include <QDateTime>
 
-enum ExtractMode {ExtractSSF,ExtractAR,ExtractFull,ExtractRaw,ExtractDruidII,ExtractManual,ExtractContainer};
-enum InsertMode {InsertSSF,InsertAR,InsertFull,InsertRaw,InsertDruidII,InsertManual,InsertContainer};
+enum ExtractMode {ExtractSSF,ExtractAR,ExtractFull,ExtractRaw,ExtractDruidII,ExtractManual};
+enum InsertMode {InsertSSF,InsertAR,InsertFull,InsertRaw,InsertDruidII,InsertManual};
 enum DeleteMode {DeleteSingleSys,DeleteAllSys,DeleteFull};
 
 typedef struct MySave{
@@ -46,7 +46,6 @@ public:
     bool m_bExtractDateTime;
     bool m_bExtractSize;
     bool m_bExtractSAT;
-    bool m_bExtractContainer;
     InsertMode m_InsertMode;
     bool m_bInsertSys;
     bool m_bInsertSysAll;
@@ -57,7 +56,6 @@ public:
     bool m_bInsertDateTime;
     bool m_bInsertSize;
     bool m_bInsertSAT;
-    bool m_bInsertContainer;
     DeleteMode m_DeleteMode;
     bool m_bShowHexValues;
     bool m_bAskFormatAtEveryExtract;

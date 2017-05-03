@@ -24,7 +24,6 @@ void Config::UpdateFlags()
         m_bExtractSys=false;
         m_bExtractSysAll=false;
         m_bExtractSysFillZero=false;
-        m_bExtractContainer=false;
         break;
     case ExtractAR:
         m_bExtractDateTime=true;
@@ -36,7 +35,6 @@ void Config::UpdateFlags()
         m_bExtractSys=true;
         m_bExtractSysAll=true;
         m_bExtractSysFillZero=true;
-        m_bExtractContainer=false;
         break;
     case ExtractFull:
         m_bExtractDateTime=true;
@@ -48,7 +46,6 @@ void Config::UpdateFlags()
         m_bExtractSys=true;
         m_bExtractSysAll=true;
         m_bExtractSysFillZero=false;
-        m_bExtractContainer=false;
         break;
     case ExtractRaw:
         m_bExtractDateTime=false;
@@ -60,7 +57,6 @@ void Config::UpdateFlags()
         m_bExtractSys=false;
         m_bExtractSysAll=false;
         m_bExtractSysFillZero=false;
-        m_bExtractContainer=false;
         break;
     case ExtractDruidII:
         m_bExtractDateTime=true;
@@ -72,22 +68,8 @@ void Config::UpdateFlags()
         m_bExtractSys=false;
         m_bExtractSysAll=false;
         m_bExtractSysFillZero=false;
-        m_bExtractContainer=false;
         break;
     case ExtractManual:
-        m_bExtractContainer=false;
-        break;
-    case ExtractContainer:
-        m_bExtractDateTime=true;
-        m_bExtractDescription=true;
-        m_bExtractLanguage=true;
-        m_bExtractName=true;
-        m_bExtractSAT=true;
-        m_bExtractSize=true;
-        m_bExtractSys=true;
-        m_bExtractSysAll=true;
-        m_bExtractSysFillZero=false;
-        m_bExtractContainer=true;
         break;
     }
     switch (m_InsertMode)
@@ -102,7 +84,6 @@ void Config::UpdateFlags()
         m_bInsertSys=false;
         m_bInsertSysAll=false;
         m_bInsertSysUseCounter=false;
-        m_bInsertContainer=false;
         break;
     case InsertAR:
         m_bInsertDateTime=true;
@@ -114,7 +95,6 @@ void Config::UpdateFlags()
         m_bInsertSys=true;
         m_bInsertSysAll=true;
         m_bInsertSysUseCounter=false;
-        m_bInsertContainer=false;
         break;
     case InsertFull:
         m_bInsertDateTime=true;
@@ -126,7 +106,6 @@ void Config::UpdateFlags()
         m_bInsertSys=true;
         m_bInsertSysAll=true;
         m_bInsertSysUseCounter=true;
-        m_bInsertContainer=false;
         break;
     case InsertRaw:
         m_bInsertDateTime=false;
@@ -138,7 +117,6 @@ void Config::UpdateFlags()
         m_bInsertSys=false;
         m_bInsertSysAll=false;
         m_bInsertSysUseCounter=false;
-        m_bInsertContainer=false;
         break;
     case InsertDruidII:
         m_bInsertDateTime=true;
@@ -150,22 +128,8 @@ void Config::UpdateFlags()
         m_bInsertSys=false;
         m_bInsertSysAll=false;
         m_bInsertSysUseCounter=false;
-        m_bInsertContainer=false;
         break;
     case InsertManual:
-        m_bInsertContainer=false;
-        break;
-    case InsertContainer:
-        m_bInsertDateTime=true;
-        m_bInsertDescription=true;
-        m_bInsertLanguage=true;
-        m_bInsertName=true;
-        m_bInsertSAT=true;
-        m_bInsertSize=true;
-        m_bInsertSys=true;
-        m_bInsertSysAll=true;
-        m_bInsertSysUseCounter=true;
-        m_bInsertContainer=true;
         break;
     }
 }
@@ -183,7 +147,6 @@ void Config::SaveToRegistry()
     TheSettings->setValue("Extract Size",m_bExtractSize);
     TheSettings->setValue("Extract SAT",m_bExtractSAT);
     TheSettings->setValue("Extract Language",m_bExtractLanguage);
-    TheSettings->setValue("Extract Container",m_bExtractContainer);
     TheSettings->setValue("Insert Mode",(int)m_InsertMode);
     TheSettings->setValue("Insert Sys",m_bInsertSys);
     TheSettings->setValue("Insert Sys All",m_bInsertSysAll);
@@ -194,7 +157,6 @@ void Config::SaveToRegistry()
     TheSettings->setValue("Insert Size",m_bInsertSize);
     TheSettings->setValue("Insert SAT",m_bInsertSAT);
     TheSettings->setValue("Insert Language",m_bInsertLanguage);
-    TheSettings->setValue("Insert Container",m_bInsertContainer);
     TheSettings->setValue("Delete Mode",(int)m_DeleteMode);
     TheSettings->setValue("Show Hex Values",m_bShowHexValues);
     TheSettings->setValue("Ask For Format At Every Extract",m_bAskFormatAtEveryExtract);
@@ -214,7 +176,6 @@ void Config::LoadFromRegistry()
     m_bExtractSize = TheSettings->value("Extract Size").toBool();
     m_bExtractSAT = TheSettings->value("Extract SAT").toBool();
     m_bExtractLanguage = TheSettings->value("Extract Language").toBool();
-    m_bExtractContainer = TheSettings->value("Extract Container").toBool();
     m_InsertMode = (InsertMode)TheSettings->value("Insert Mode").toInt();
     m_bInsertSys = (bool)TheSettings->value("Insert Sys").toBool();
     m_bInsertSysAll = (bool)TheSettings->value("Insert Sys All").toBool();
@@ -225,7 +186,6 @@ void Config::LoadFromRegistry()
     m_bInsertSize = (bool)TheSettings->value("Insert Size").toBool();
     m_bInsertSAT = (bool)TheSettings->value("Insert SAT").toBool();
     m_bInsertLanguage = (bool)TheSettings->value("Insert Language").toBool();
-    m_bInsertContainer = TheSettings->value("Insert Container").toBool();
     m_DeleteMode = (DeleteMode)TheSettings->value("Delete Mode").toInt();
     m_bShowHexValues = (bool)TheSettings->value("Show Hex Values").toBool();
     m_bAskFormatAtEveryExtract = (bool)TheSettings->value("Ask For Format At Every Extract").toBool();

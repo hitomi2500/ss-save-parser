@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>676</width>
-    <height>402</height>
+    <height>461</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
       <string/>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="CommonTab">
       <attribute name="title">
@@ -70,6 +70,13 @@
        </item>
        <item row="4" column="4">
         <layout class="QFormLayout" name="formLayout">
+         <item row="0" column="1">
+          <widget class="QLabel" name="label_27">
+           <property name="text">
+            <string>Legend:</string>
+           </property>
+          </widget>
+         </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label_Extract_L1">
            <property name="text">
@@ -221,27 +228,6 @@
           <widget class="QLabel" name="label_8">
            <property name="text">
             <string>Empty</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLabel" name="label_27">
-           <property name="text">
-            <string>Legend:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="12" column="0">
-          <widget class="QLabel" name="label_Extract_L12">
-           <property name="text">
-            <string>L12</string>
-           </property>
-          </widget>
-         </item>
-         <item row="12" column="1">
-          <widget class="QLabel" name="label_12">
-           <property name="text">
-            <string>Container(not to scale)</string>
            </property>
           </widget>
          </item>
@@ -460,66 +446,17 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_Insert_L2">
-           <property name="text">
-            <string>L2</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_Insert_L3">
-           <property name="text">
-            <string>L3</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
-          <widget class="QLabel" name="label_Insert_L4">
-           <property name="text">
-            <string>L4</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="0">
-          <widget class="QLabel" name="label_Insert_L5">
-           <property name="text">
-            <string>L5</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
-          <widget class="QLabel" name="label_Insert_L6">
-           <property name="text">
-            <string>L6</string>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="0">
-          <widget class="QLabel" name="label_Insert_L7">
-           <property name="text">
-            <string>L7</string>
-           </property>
-          </widget>
-         </item>
-         <item row="8" column="0">
-          <widget class="QLabel" name="label_Insert_L8">
-           <property name="text">
-            <string>L8</string>
-           </property>
-          </widget>
-         </item>
-         <item row="9" column="0">
-          <widget class="QLabel" name="label_Insert_L9">
-           <property name="text">
-            <string>L9</string>
-           </property>
-          </widget>
-         </item>
          <item row="1" column="1">
           <widget class="QLabel" name="label_37">
            <property name="text">
             <string>Sys header</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_Insert_L2">
+           <property name="text">
+            <string>L2</string>
            </property>
           </widget>
          </item>
@@ -530,6 +467,13 @@
            </property>
           </widget>
          </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_Insert_L3">
+           <property name="text">
+            <string>L3</string>
+           </property>
+          </widget>
+         </item>
          <item row="3" column="1">
           <widget class="QLabel" name="label_7">
            <property name="text">
@@ -537,17 +481,10 @@
            </property>
           </widget>
          </item>
-         <item row="10" column="0">
-          <widget class="QLabel" name="label_Insert_L10">
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_Insert_L4">
            <property name="text">
-            <string>L10</string>
-           </property>
-          </widget>
-         </item>
-         <item row="11" column="0">
-          <widget class="QLabel" name="label_Insert_L11">
-           <property name="text">
-            <string>L11</string>
+            <string>L4</string>
            </property>
           </widget>
          </item>
@@ -558,10 +495,24 @@
            </property>
           </widget>
          </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_Insert_L5">
+           <property name="text">
+            <string>L5</string>
+           </property>
+          </widget>
+         </item>
          <item row="5" column="1">
           <widget class="QLabel" name="label_42">
            <property name="text">
             <string>Language</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QLabel" name="label_Insert_L6">
+           <property name="text">
+            <string>L6</string>
            </property>
           </widget>
          </item>
@@ -572,10 +523,24 @@
            </property>
           </widget>
          </item>
+         <item row="7" column="0">
+          <widget class="QLabel" name="label_Insert_L7">
+           <property name="text">
+            <string>L7</string>
+           </property>
+          </widget>
+         </item>
          <item row="7" column="1">
           <widget class="QLabel" name="label_44">
            <property name="text">
             <string>Date/time</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="0">
+          <widget class="QLabel" name="label_Insert_L8">
+           <property name="text">
+            <string>L8</string>
            </property>
           </widget>
          </item>
@@ -586,10 +551,24 @@
            </property>
           </widget>
          </item>
+         <item row="9" column="0">
+          <widget class="QLabel" name="label_Insert_L9">
+           <property name="text">
+            <string>L9</string>
+           </property>
+          </widget>
+         </item>
          <item row="9" column="1">
           <widget class="QLabel" name="label_46">
            <property name="text">
             <string>Alloc.table</string>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="0">
+          <widget class="QLabel" name="label_Insert_L10">
+           <property name="text">
+            <string>L10</string>
            </property>
           </widget>
          </item>
@@ -600,24 +579,17 @@
            </property>
           </widget>
          </item>
+         <item row="11" column="0">
+          <widget class="QLabel" name="label_Insert_L11">
+           <property name="text">
+            <string>L11</string>
+           </property>
+          </widget>
+         </item>
          <item row="11" column="1">
           <widget class="QLabel" name="label_48">
            <property name="text">
             <string>Empty</string>
-           </property>
-          </widget>
-         </item>
-         <item row="12" column="0">
-          <widget class="QLabel" name="label_Insert_L12">
-           <property name="text">
-            <string>L12</string>
-           </property>
-          </widget>
-         </item>
-         <item row="12" column="1">
-          <widget class="QLabel" name="label_21">
-           <property name="text">
-            <string>Container(not to scale)</string>
            </property>
           </widget>
          </item>
