@@ -548,106 +548,120 @@ void MainWindow::on_LoadButton_clicked()
             //parsing sequences
             int iHeadersEnd = 0x20000;
             file_in.seek(iHeadersEnd);
-            bool bHeaderFound;
-            int iPackedSize=-1;
-            int iUnpackedSize=-1;
-            unsigned char cActionReplayKey;
-            unsigned char cActionReplayKey2;
-            bool bKey2Used = false;
-            do
+            //check if it's an uncompressed AR image
+            file_in.read(cbuf,16);//get 16 bytes
+            file_in.seek(iHeadersEnd);//return to start
+            if (QByteArray(cbuf).startsWith("BackUpRam Format"))
             {
-                bHeaderFound = false;
-                file_in.read(cbuf,5);
-                if (QByteArray(cbuf).startsWith("RLE01"))
-                {
-                    //RLE01 header, parsing
-                    bHeaderFound = true;
-                    file_in.read(cbuf,1);
-                    cActionReplayKey = (unsigned char)cbuf[0];
-                    file_in.read(cbuf,4);
-                    iPackedSize = 0x1000000*(unsigned char)cbuf[0] + 0x10000*(unsigned char)cbuf[1] +
-                            0x100*(unsigned char)cbuf[2] + (unsigned char)cbuf[3];
-                    iHeadersEnd+=10;//size of RLE01 header
-                }
-                else if (QByteArray(cbuf).startsWith("DEF02"))
-                {
-                    //DEF02 header, parsing
-                    bHeaderFound = true;
-                    file_in.read(cbuf,1);
-                    cActionReplayKey2 = (unsigned char)cbuf[0];
-                    bKey2Used = true;
-                    file_in.read(cbuf,4);
-                    iUnpackedSize = 0x1000000*(unsigned char)cbuf[0] + 0x10000*(unsigned char)cbuf[1] +
-                            0x100*(unsigned char)cbuf[2] + (unsigned char)cbuf[3];
-                    iHeadersEnd+=10;//size of RLE01 header
-                }
-            }while (bHeaderFound);
-
-            file_in.seek(iHeadersEnd);
-
-            //now brutally unpacking it as a full image
-            int iPointer = 0;
-            while (file_in.pos() < (0x20000+iPackedSize))
+                //this is an uncompressed image, probably unpacked by Pseudo Saturn Kai, copy as-is
+                QByteArray b = file_in.readAll();
+                HugeRAM.replace(0,b.size(),b);
+            }
+            else
             {
-                //AR format is compression-key-based
-                //key is a 8-bit value stored at the card beginning
-                //if it appears in oriinal save, it is encoded as KK 00
-                //RLE sequences are 24-bit:
-                //0xKK 0xXX 0xYY - write XX copies of YY, KK is key
-                file_in.read(cbuf,1);
-                if ((unsigned char)cbuf[0] == cActionReplayKey)
+                //compressed AR image
+                bool bHeaderFound;
+                int iPackedSize=-1;
+                int iUnpackedSize=-1;
+                unsigned char cActionReplayKey;
+                unsigned char cActionReplayKey2;
+                bool bKey2Used = false;
+                do
                 {
-                    //it's an RLE sequence! which one?
-                    file_in.read(&(cbuf[1]),1);
-                    if ((unsigned char)cbuf[1] == 0x00)
+                    bHeaderFound = false;
+                    file_in.read(cbuf,5);
+                    if (QByteArray(cbuf).startsWith("RLE01"))
                     {
-                        //it's a KK 00 sequence, inserting single KK character
-                        HugeRAM[iPointer] = cbuf[0];//inserting KK
-                        iPointer++;
+                        //RLE01 header, parsing
+                        bHeaderFound = true;
+                        file_in.read(cbuf,1);
+                        cActionReplayKey = (unsigned char)cbuf[0];
+                        file_in.read(cbuf,4);
+                        iPackedSize = 0x1000000*(unsigned char)cbuf[0] + 0x10000*(unsigned char)cbuf[1] +
+                                0x100*(unsigned char)cbuf[2] + (unsigned char)cbuf[3];
+                        iHeadersEnd+=10;//size of RLE01 header
+                    }
+                    else if (QByteArray(cbuf).startsWith("DEF02"))
+                    {
+                        //DEF02 header, parsing
+                        bHeaderFound = true;
+                        file_in.read(cbuf,1);
+                        cActionReplayKey2 = (unsigned char)cbuf[0];
+                        bKey2Used = true;
+                        file_in.read(cbuf,4);
+                        iUnpackedSize = 0x1000000*(unsigned char)cbuf[0] + 0x10000*(unsigned char)cbuf[1] +
+                                0x100*(unsigned char)cbuf[2] + (unsigned char)cbuf[3];
+                        iHeadersEnd+=10;//size of RLE01 header
+                    }
+                }while (bHeaderFound);
+
+                file_in.seek(iHeadersEnd);
+
+                //now brutally unpacking it as a full image
+                int iPointer = 0;
+                while (file_in.pos() < (0x20000+iPackedSize))
+                {
+                    //AR format is compression-key-based
+                    //key is a 8-bit value stored at the card beginning
+                    //if it appears in oriinal save, it is encoded as KK 00
+                    //RLE sequences are 24-bit:
+                    //0xKK 0xXX 0xYY - write XX copies of YY, KK is key
+                    file_in.read(cbuf,1);
+                    if ((unsigned char)cbuf[0] == cActionReplayKey)
+                    {
+                        //it's an RLE sequence! which one?
+                        file_in.read(&(cbuf[1]),1);
+                        if ((unsigned char)cbuf[1] == 0x00)
+                        {
+                            //it's a KK 00 sequence, inserting single KK character
+                            HugeRAM[iPointer] = cbuf[0];//inserting KK
+                            iPointer++;
+                        }
+                        else
+                        {
+                            //it's a KK XX YY sequence
+                            file_in.read(&(cbuf[2]),1);
+                            for (int j=0;j<((unsigned char)cbuf[1]);j++)
+                            {
+                                HugeRAM[iPointer] = cbuf[2];
+                                iPointer++;
+                            }
+                        }
+                    }
+                    else if (bKey2Used && ((unsigned char)cbuf[0] == cActionReplayKey2))
+                    {
+                        //it's a key2 RLE sequence
+                        file_in.read(&(cbuf[1]),1);
+                        if ((unsigned char)cbuf[1] == 0x00)
+                        {
+                            //it's a KK 00 sequence, inserting single KK character
+                            HugeRAM[iPointer] = cbuf[0];//inserting KK
+                            iPointer++;
+                        }
+                        else
+                        {
+                            //it's a KK XX YY DD sequence
+                            //DD is an unknown field.
+                            //DD could be a dummy data, redundacy data, checksum, or something else
+                            //but the fact is DD is not needed for decompression
+                            file_in.read(&(cbuf[2]),2);
+                            for (int j=0;j<((unsigned char)cbuf[1]);j++)
+                            {
+                                HugeRAM[iPointer] = cbuf[2];
+                                iPointer++;
+                            }
+                        }
                     }
                     else
                     {
-                        //it's a KK XX YY sequence
-                        file_in.read(&(cbuf[2]),1);
-                        for (int j=0;j<((unsigned char)cbuf[1]);j++)
-                        {
-                            HugeRAM[iPointer] = cbuf[2];
-                            iPointer++;
-                        }
-                    }
-                }
-                else if (bKey2Used && ((unsigned char)cbuf[0] == cActionReplayKey2))
-                {
-                    //it's a key2 RLE sequence
-                    file_in.read(&(cbuf[1]),1);
-                    if ((unsigned char)cbuf[1] == 0x00)
-                    {
-                        //it's a KK 00 sequence, inserting single KK character
-                        HugeRAM[iPointer] = cbuf[0];//inserting KK
+                        //it's not an RLE sequence, just a databyte
+                        HugeRAM[iPointer] = cbuf[0];//inserting databyte
                         iPointer++;
                     }
-                    else
-                    {
-                        //it's a KK XX YY DD sequence
-                        //DD is an unknown field.
-                        //DD could be a dummy data, redundacy data, checksum, or something else
-                        //but the fact is DD is not needed for decompression
-                        file_in.read(&(cbuf[2]),2);
-                        for (int j=0;j<((unsigned char)cbuf[1]);j++)
-                        {
-                            HugeRAM[iPointer] = cbuf[2];
-                            iPointer++;
-                        }
-                    }
-                }
-                else
-                {
-                    //it's not an RLE sequence, just a databyte
-                    HugeRAM[iPointer] = cbuf[0];//inserting databyte
-                    iPointer++;
                 }
             }
-            //add headr
+
+            //add header
             for (i=0;i<4;i++)
                 HugeRAM.replace(16*i,16,QByteArray("BackUpRam Format"));
 
