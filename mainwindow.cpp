@@ -3,6 +3,8 @@
 #include <QDate>
 #include <QTextCodec>
 #include <QTableWidget>
+#include <QXmlStreamWriter>
+#include <QXmlStreamReader>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "parselib.h"
@@ -44,21 +46,17 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->tableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);//  SingleSelection);
     ui->RepackButton->setEnabled(false);
-    //ui->Repack_Button_2->setEnabled(false);
     ui->SaveButton->setEnabled(false);
     ui->DownloadButton->setEnabled(false);
     ui->UploadButton->setEnabled(false);
     ui->ExtractButton->setEnabled(false);
+    ui->ExtractXMLButton->setEnabled(false);
     ui->InsertButton->setEnabled(false);
+    ui->InsertXMLButton->setEnabled(false);
     ui->EditButton->setEnabled(false);
     ui->DeleteButton->setEnabled(false);
-    //ui->SetupButton->setEnabled(false);
-    ui->ImageSizeLcdNumber->setDigitCount(8);
-    ui->ImageSizeLcdNumber->setPalette(QPalette(Qt::black));
-    ui->ImageSizeLcdNumber->setFrameStyle(QFrame::NoFrame);
-    ui->ClusterSizeLcdNumber->setDigitCount(4);
-    ui->ClusterSizeLcdNumber->setPalette(QPalette(Qt::black));
-    ui->ClusterSizeLcdNumber->setFrameStyle(QFrame::NoFrame);
+    ui->ImageSizeLcdNumber->setFont(QFont(QString("Liberation"),12,12,false));
+    ui->ClusterSizeLcdNumber->setFont(QFont(QString("Liberation"),12,12,false));
     this->setWindowIcon(QIcon(QPixmap(QString(":/images/masqurin_highwizard.xpm"),0,Qt::AutoColor)));
     this->setWindowTitle(this->windowTitle().append(" ").append(APP_VERSION));
     connect(ui->tableWidget->horizontalHeader(),
@@ -218,8 +216,8 @@ void MainWindow::ParseHugeRAM()
     }
     ui->ImageFillProgressBar->setValue((100*iUsedClusters*TheConfig->m_iClusterSize)/TheConfig->m_iFileSize);
     //display image size and cluster size
-    ui->ImageSizeLcdNumber->display(TheConfig->m_iFileSize);
-    ui->ClusterSizeLcdNumber->display(TheConfig->m_iClusterSize);
+    ui->ImageSizeLcdNumber->setText(QString("%1").arg(TheConfig->m_iFileSize));
+    ui->ClusterSizeLcdNumber->setText(QString("%1").arg(TheConfig->m_iClusterSize));
     //display list
     ui->tableWidget->clear();
     ui->tableWidget->setRowCount(0);
@@ -272,7 +270,9 @@ void MainWindow::ParseHugeRAM()
         ui->tableWidget->selectRow(0);
         ui->SaveButton->setEnabled(true);//enable save
         ui->ExtractButton->setEnabled(true);//enable extract
+        ui->ExtractXMLButton->setEnabled(true);//enable extract
         ui->InsertButton->setEnabled(true);//enable insert
+        ui->InsertXMLButton->setEnabled(true);//enable insert
         ui->RepackButton->setEnabled(true);//enable repack
         ui->DeleteButton->setEnabled(true);//enable delete
     }
@@ -280,7 +280,9 @@ void MainWindow::ParseHugeRAM()
     {
         ui->SaveButton->setEnabled(true);//still enable save
         ui->ExtractButton->setEnabled(false);//disable extract
+        ui->ExtractXMLButton->setEnabled(false);//enable extract
         ui->InsertButton->setEnabled(true);//enable insert
+        ui->InsertXMLButton->setEnabled(true);//enable insert
         ui->RepackButton->setEnabled(true);//enable repack
         ui->DeleteButton->setEnabled(false);//disable delete
     }
@@ -1294,6 +1296,161 @@ void MainWindow::on_ExtractButton_clicked()
     ui->statusBar->showMessage(tr("File %1 saved").arg(fileName));
 }
 
+void MainWindow::on_ExtractXMLButton_clicked()
+{
+    //extract save from image
+    char buf[256];
+    SaveType tmpSave;
+    QFile file_out;
+    QString fileName;
+    QString folderName;
+    TheConfig->LoadFromRegistry();\
+
+    //XML extraction is similar to binary with some exceptions:
+    // 1) all extract flags are ignored, everything is extracted except SAT and 2..n headers
+    // 2) some additional data fields are added, like player's name, comment, source etc.
+
+    //get selected save or save range
+    int iStart = ui->tableWidget->selectedRanges().at(0).topRow();
+    int iEnd = ui->tableWidget->selectedRanges().at(0).bottomRow();
+    if (iStart==iEnd)
+    {
+        //choose single file to save
+        tmpSave = SavesList.at(iStart);//ui->tableWidget->currentRow());
+        fileName = QFileDialog::getSaveFileName(this,tr("Save Savegame"), QString(tmpSave.Name), NULL);
+        if (fileName.isEmpty()) return; //return if user cancel
+        file_out.setFileName(fileName);
+        if (!(file_out.open(QIODevice::WriteOnly)))
+        {
+            QMessageBox msgBox;
+            msgBox.setText(tr("Cannot open save file %s.").arg(fileName));
+            msgBox.exec();
+            return;
+        }
+    }
+    else
+    {
+        //when saving multiple files, ask for folder, not for file
+        QFileDialog dialog(this);
+        dialog.setFileMode(QFileDialog::Directory);
+        if (dialog.exec())
+            folderName = dialog.selectedFiles().at(0);
+        else return; //return if user cancel
+    }
+    //file/folder opened, move on
+
+    //saves cycle
+    for (int iSaveIndex = iStart; iSaveIndex <= iEnd; iSaveIndex++)
+    {
+        if (iStart != iEnd)
+        {
+            //if multiple saves load every file now
+            tmpSave = SavesList.at(iSaveIndex);
+            QString fileName = folderName+QString("/")+QString(tmpSave.Name);
+            file_out.setFileName(fileName);
+            if (!(file_out.open(QIODevice::WriteOnly)))
+            {
+                QMessageBox msgBox;
+                msgBox.setText(tr("Cannot open save file %s.").arg(fileName));
+                msgBox.exec();
+                return;
+            }
+        }
+        //TODO: ask user for additional fields
+        //collect all binary save data
+        QByteArray tmpdata;
+        tmpdata.clear();
+        int iSATLeft = tmpSave.iSATSize;
+        int iCurrentCluster = -1;
+        int iCurrentPos = 34;
+        //skipping SAT first
+        for (int i=0;i<tmpSave.iSATSize*2;i++)
+        {
+            if (iCurrentPos == TheConfig->m_iClusterSize-1)
+            {
+                iCurrentCluster++;
+                iCurrentPos = 4;
+            }
+            else
+                iCurrentPos++;
+        }
+        //now copying data
+        for (int i=0;i<tmpSave.iBytes;i++)
+        {
+            if (-1 == iCurrentCluster)
+                tmpdata.append(HugeRAM.at(tmpSave.iStartCluster*TheConfig->m_iClusterSize+iCurrentPos));
+            else
+                tmpdata.append(HugeRAM.at(tmpSave.SAT[iCurrentCluster]*TheConfig->m_iClusterSize+iCurrentPos));
+
+            if (iCurrentPos == TheConfig->m_iClusterSize-1)
+            {
+                iCurrentCluster++;
+                iCurrentPos = 4;
+            }
+            else
+                iCurrentPos++;
+        }
+
+        //start xml writer
+        QXmlStreamWriter xml_write(&file_out);
+        xml_write.setAutoFormatting(true);
+        xml_write.writeStartDocument(QString("1.0"));
+        xml_write.writeStartElement(QString("hard_fields"));
+        xml_write.writeStartElement("name");
+        xml_write.writeCharacters(QString(tmpSave.Name));
+        xml_write.writeEndElement();
+        xml_write.writeStartElement("name_binary");
+        xml_write.writeCharacters(QString(tmpSave.Name.toBase64()));
+        xml_write.writeEndElement();
+        xml_write.writeStartElement("comment");
+        xml_write.writeCharacters(QString(tmpSave.Comment));
+        xml_write.writeEndElement();
+        xml_write.writeStartElement("comment_binary");
+        xml_write.writeCharacters(QString(tmpSave.Comment.toBase64()));
+        xml_write.writeEndElement();
+        xml_write.writeStartElement("language_code");
+        xml_write.writeCharacters(QString("%1").arg(tmpSave.cLanguageCode));
+        xml_write.writeEndElement();
+        xml_write.writeStartElement("size");
+        xml_write.writeCharacters(QString("%1").arg(tmpSave.iBytes));
+        xml_write.writeEndElement();
+        xml_write.writeStartElement(QString("date"));
+        xml_write.writeAttribute("year",QString("%1").arg(tmpSave.DateTime.date().year()));
+        xml_write.writeAttribute("month",QString("%1").arg(tmpSave.DateTime.date().month()))        ;
+        xml_write.writeAttribute("day",QString("%1").arg(tmpSave.DateTime.date().day()));
+        xml_write.writeEndElement();
+        xml_write.writeStartElement(QString("time"));
+        xml_write.writeAttribute("hour",QString("%1").arg(tmpSave.DateTime.time().hour()));
+        xml_write.writeAttribute("minute",QString("%1").arg(tmpSave.DateTime.time().minute()))        ;
+        xml_write.writeAttribute("second",QString("%1").arg(tmpSave.DateTime.time().second()));
+        xml_write.writeEndElement();
+        xml_write.writeStartElement("data");
+        xml_write.writeCharacters(QString(tmpdata.toBase64()));
+        xml_write.writeEndElement();
+        xml_write.writeEndElement();
+        xml_write.writeEndDocument();
+        //1st cluster header
+        buf[0] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize];
+        buf[1] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1];
+        buf[2] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2];
+        buf[3] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3];
+        //file_out.write(buf,4);
+        //file_out.write(tmpSave.Name,11);
+        buf[0]=(char)tmpSave.cLanguageCode;
+        //file_out.write(buf,1);
+        //file_out.write(tmpSave.Comment,10);
+        //file_out.write(tmpSave.DateTimeRaw,4);
+        buf[0]=(unsigned char)(tmpSave.iBytes/0x1000000);
+        buf[1]=(unsigned char)(tmpSave.iBytes/0x10000);
+        buf[2]=(unsigned char)(tmpSave.iBytes/0x100);
+        buf[3]=(unsigned char)(tmpSave.iBytes);
+        //file_out.write(buf,4);
+        //write data
+        file_out.close();
+        ui->statusBar->showMessage(tr("File %1 saved").arg(fileName));
+    }
+}
+
 
 void MainWindow::on_InsertButton_clicked()
 {
@@ -1775,6 +1932,11 @@ void MainWindow::on_InsertButton_clicked()
 
     ui->statusBar->showMessage(tr("Save from file %1 inserted").arg(fileName));
     TheConfig->LoadFromRegistry();//restoring config after all those temporal updates (if any)
+}
+
+void MainWindow::on_InsertXMLButton_clicked()
+{
+    //TODO : add content
 }
 
 void MainWindow::on_DeleteButton_clicked()

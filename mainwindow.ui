@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>733</width>
-    <height>330</height>
+    <width>753</width>
+    <height>395</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -109,6 +109,20 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="ExtractXMLButton">
+        <property name="text">
+         <string>Extract XML</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="InsertXMLButton">
+        <property name="text">
+         <string>Insert XML</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="EditButton">
         <property name="text">
          <string>Edit</string>
@@ -157,6 +171,13 @@
     <item row="2" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Usage:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QProgressBar" name="ImageFillProgressBar">
         <property name="value">
          <number>24</number>
@@ -184,7 +205,11 @@
        </widget>
       </item>
       <item>
-       <widget class="QLCDNumber" name="ImageSizeLcdNumber"/>
+       <widget class="QLabel" name="ImageSizeLcdNumber">
+        <property name="text">
+         <string>0</string>
+        </property>
+       </widget>
       </item>
       <item>
        <spacer name="horizontalSpacer_3">
@@ -207,7 +232,11 @@
        </widget>
       </item>
       <item>
-       <widget class="QLCDNumber" name="ClusterSizeLcdNumber"/>
+       <widget class="QLabel" name="ClusterSizeLcdNumber">
+        <property name="text">
+         <string>0</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>

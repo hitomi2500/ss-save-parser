@@ -51,7 +51,11 @@ private slots:
 
     void on_InsertButton_clicked();
 
+    void on_InsertXMLButton_clicked();
+
     void on_ExtractButton_clicked();
+
+    void on_ExtractXMLButton_clicked();
 
     void on_DeleteButton_clicked();
 
