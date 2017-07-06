@@ -1395,42 +1395,46 @@ void MainWindow::on_ExtractXMLButton_clicked()
         QXmlStreamWriter xml_write(&file_out);
         xml_write.setAutoFormatting(true);
         xml_write.writeStartDocument(QString("1.0"));
-        xml_write.writeStartElement(QString("hard_fields"));
+        xml_write.writeStartElement(QString("Sega_Saturn_Save"));
+        xml_write.writeStartElement(QString("mandatory"));
         xml_write.writeStartElement("counter");
         xml_write.writeCharacters(QString("%1").arg(tmpSave.cCounter));
-        xml_write.writeEndElement();
+        xml_write.writeEndElement();//counter
         xml_write.writeStartElement("name");
         xml_write.writeCharacters(QString(tmpSave.Name));
-        xml_write.writeEndElement();
+        xml_write.writeEndElement();//name
         xml_write.writeStartElement("name_binary");
         xml_write.writeCharacters(QString(tmpSave.Name.toBase64()));
-        xml_write.writeEndElement();
+        xml_write.writeEndElement();//name_binary
         xml_write.writeStartElement("comment");
         xml_write.writeCharacters(QString(tmpSave.Comment));
-        xml_write.writeEndElement();
+        xml_write.writeEndElement();//name_binary
         xml_write.writeStartElement("comment_binary");
         xml_write.writeCharacters(QString(tmpSave.Comment.toBase64()));
-        xml_write.writeEndElement();
+        xml_write.writeEndElement();//comment
         xml_write.writeStartElement("language_code");
         xml_write.writeCharacters(QString("%1").arg(tmpSave.cLanguageCode));
-        xml_write.writeEndElement();
+        xml_write.writeEndElement();//language_code
         xml_write.writeStartElement("size");
         xml_write.writeCharacters(QString("%1").arg(tmpSave.iBytes));
-        xml_write.writeEndElement();
+        xml_write.writeEndElement();//size
         xml_write.writeStartElement(QString("date"));
         xml_write.writeAttribute("year",QString("%1").arg(tmpSave.DateTime.date().year()));
         xml_write.writeAttribute("month",QString("%1").arg(tmpSave.DateTime.date().month()))        ;
         xml_write.writeAttribute("day",QString("%1").arg(tmpSave.DateTime.date().day()));
-        xml_write.writeEndElement();
+        xml_write.writeEndElement();//date
         xml_write.writeStartElement(QString("time"));
         xml_write.writeAttribute("hour",QString("%1").arg(tmpSave.DateTime.time().hour()));
         xml_write.writeAttribute("minute",QString("%1").arg(tmpSave.DateTime.time().minute()))        ;
         xml_write.writeAttribute("second",QString("%1").arg(tmpSave.DateTime.time().second()));
-        xml_write.writeEndElement();
+        xml_write.writeEndElement();//time
         xml_write.writeStartElement("data");
         xml_write.writeCharacters(QString(tmpdata.toBase64()));
-        xml_write.writeEndElement();
-        xml_write.writeEndElement();
+        xml_write.writeEndElement();//data
+        xml_write.writeEndElement();//mandatory
+        xml_write.writeStartElement(QString("optional"));
+        xml_write.writeEndElement();//optional
+        xml_write.writeEndElement();//Sega Saturn Save
         xml_write.writeEndDocument();
         //1st cluster header
         buf[0] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize];
