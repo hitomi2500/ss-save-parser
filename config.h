@@ -16,7 +16,7 @@ typedef struct MySave{
     QByteArray DateTimeRaw;
     int iBytes;
     int iBlocks;
-    short SAT[2048];
+    short SAT[262144]; //256K ought to be enough for anybody
     int iSATSize;
     int iStartCluster;
     unsigned char cCounter;
