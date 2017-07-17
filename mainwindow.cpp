@@ -822,6 +822,7 @@ void MainWindow::on_LoadButton_clicked()
             HugeRAM[i] = cbuf[1];
         }
     }
+    ui->CurrentFileLabel->setText(tr("Current file : %1").arg(file_in.fileName()));
     ui->statusBar->showMessage(tr("File loaded, size %1, cluster size is %2 bytes.").arg(TheConfig->m_iFileSize).arg(TheConfig->m_iClusterSize));
     file_in.close();
     //enable name sorting
@@ -869,6 +870,7 @@ void MainWindow::on_SaveButton_clicked()
         }
     }
     file_out.close();
+    ui->CurrentFileLabel->setText(tr("Current file : %1").arg(file_out.fileName()));
 }
 
 void MainWindow::on_RepackButton_clicked()
@@ -2347,6 +2349,7 @@ void MainWindow::on_NewButton_clicked()
     }
     TheConfig->m_iFileSize = NewSettings.iImageSize*1024;
     TheConfig->SaveToRegistry();
+    ui->CurrentFileLabel->setText(tr("Current file : None"));
     ParseHugeRAM();//updating
 }
 

@@ -32,7 +32,7 @@
      <height>999999</height>
     </size>
    </property>
-   <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,10000,0" columnstretch="10000,0">
+   <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,10000,0,0" columnstretch="10000,0">
     <item row="0" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
@@ -239,6 +239,13 @@
        </widget>
       </item>
      </layout>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLabel" name="CurrentFileLabel">
+      <property name="text">
+       <string>Current file : None</string>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
