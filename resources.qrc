@@ -4,5 +4,10 @@
         <file>sys_header_start.xpm</file>
         <file>sys_header_counter.xpm</file>
         <file>blue_arrow.xpm</file>
+        <file>save.xpm</file>
+        <file>open.xpm</file>
+        <file>new.xpm</file>
+        <file>cart_to_game.xpm</file>
+        <file>game_to_cart.xpm</file>
     </qresource>
 </RCC>

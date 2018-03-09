@@ -11,7 +11,7 @@ QDateTime GetDateTimeFromSSF4Byte(QByteArray buf);
 QByteArray GetSSF4ByteFromDateTime(QDateTime dt);
 
 ParseResult ParseHeader(QByteArray buf, SaveType *save);
-ParseResult ParseSAT(QByteArray buf, SaveType *save, int ClusterSize);
+ParseResult ParseSAT(QByteArray *hugeram, SaveType *save, int iClusterSize);
 
 #endif // PARSELIB_H
 

@@ -8,6 +8,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "parselib.h"
+#include "import.h"
 #include "entersavedetailsdialog.h"
 #include "fileiosettingsdialog.h"
 #include "newdialog.h"
@@ -40,6 +41,20 @@ MainWindow::MainWindow(QWidget *parent) :
     sList.append(tr("1st custer"));
     sList.append(tr("Clusters"));
     sList.append(tr("Counter"));
+    ui->NewButton->setIcon(QIcon(":/images/new.xpm"));
+    ui->NewButton->setIconSize(QSize(64,64));
+    ui->SaveButton->setIcon(QIcon(":/images/save.xpm"));
+    ui->SaveButton->setIconSize(QSize(64,64));
+    ui->LoadButton->setIcon(QIcon(":/images/open.xpm"));
+    ui->LoadButton->setIconSize(QSize(64,64));
+    ui->ExtractButton->setIcon(QIcon(":/images/cart_to_game.xpm"));
+    ui->ExtractButton->setIconSize(QSize(73,23));
+    ui->InsertButton->setIcon(QIcon(":/images/game_to_cart.xpm"));
+    ui->InsertButton->setIconSize(QSize(73,23));
+    ui->ExtractXMLButton->setIcon(QIcon(":/images/cart_to_game.xpm"));
+    ui->ExtractXMLButton->setIconSize(QSize(73,23));
+    ui->InsertXMLButton->setIcon(QIcon(":/images/game_to_cart.xpm"));
+    ui->InsertXMLButton->setIconSize(QSize(73,23));
     ui->tableWidget->setHorizontalHeaderLabels(sList);
     ui->tableWidget->resizeColumnsToContents();
     ui->tableWidget->resizeRowsToContents();
@@ -106,8 +121,8 @@ void MainWindow::ParseHugeRAM()
     {
         if (ParseHeader(HugeRAM.mid(i*TheConfig->m_iClusterSize,34),&tmpSave) == ParseOk)
         {
-            ParseSAT(HugeRAM.mid(i*TheConfig->m_iClusterSize+34,8192),&tmpSave,TheConfig->m_iClusterSize);
             tmpSave.iStartCluster=i;
+            ParseSAT(&HugeRAM,&tmpSave,TheConfig->m_iClusterSize);
             SavesList.append(tmpSave);
         }
     }
@@ -166,7 +181,7 @@ void MainWindow::ParseHugeRAM()
                     if (SavesList.at(i).iStartCluster < SavesList.at(j).iStartCluster ) SavesList.swap(i,j);
                     break;
                 case 7:
-                    if (SavesList.at(i).iSATSize < SavesList.at(j).iSATSize ) SavesList.swap(i,j);
+                    if (SavesList.at(i).SAT.size() < SavesList.at(j).SAT.size() ) SavesList.swap(i,j);
                     break;
                 case 8:
                     if (SavesList.at(i).cCounter < SavesList.at(j).cCounter ) SavesList.swap(i,j);
@@ -199,7 +214,7 @@ void MainWindow::ParseHugeRAM()
                     if (SavesList.at(i).iStartCluster > SavesList.at(j).iStartCluster ) SavesList.swap(i,j);
                     break;
                 case 7:
-                    if (SavesList.at(i).iSATSize > SavesList.at(j).iSATSize ) SavesList.swap(i,j);
+                    if (SavesList.at(i).SAT.size() > SavesList.at(j).SAT.size() ) SavesList.swap(i,j);
                     break;
                 case 8:
                     if (SavesList.at(i).cCounter > SavesList.at(j).cCounter ) SavesList.swap(i,j);
@@ -212,7 +227,7 @@ void MainWindow::ParseHugeRAM()
     iUsedClusters=0;
     for (i=0; i<SavesList.size(); i++)
     {
-        iUsedClusters+=SavesList.at(i).iSATSize;
+        iUsedClusters+=SavesList.at(i).SAT.size();
     }
     ui->ImageFillProgressBar->setValue((100*iUsedClusters*TheConfig->m_iClusterSize)/TheConfig->m_iFileSize);
     //display image size and cluster size
@@ -236,10 +251,10 @@ void MainWindow::ParseHugeRAM()
         Items[4] = QString("%1").arg(tmpSave.iBytes);
         Items[5] = QString("%1").arg(tmpSave.iBlocks);
         Items[6] = QString("%1").arg(tmpSave.iStartCluster);
-        if (tmpSave.iSATSize > 1)
-            Items[7] = QString("%1(%2...%3)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster).arg(tmpSave.SAT[tmpSave.iSATSize-2]);
+        if (tmpSave.SAT.size() > 1)
+            Items[7] = QString("%1(%2...%3)").arg(tmpSave.SAT.size()).arg(tmpSave.iStartCluster).arg(tmpSave.SAT.at(tmpSave.SAT.size()-2));
         else
-            Items[7] = QString("%1(%2)").arg(tmpSave.iSATSize).arg(tmpSave.iStartCluster);
+            Items[7] = QString("%1(%2)").arg(tmpSave.SAT.size()).arg(tmpSave.iStartCluster);
         Items[8] = QString("%1").arg((int)tmpSave.cCounter);
         if (TheConfig->m_bShowHexValues)
         {
@@ -292,7 +307,6 @@ void MainWindow::on_LoadButton_clicked()
 {
     //loading a file into internal ram, eh? registry reading first
     char cbuf[256];
-    char cbuf_prev[256];
     int i,j;
     TheConfig->LoadFromRegistry();
     //now go on
@@ -317,8 +331,6 @@ void MainWindow::on_LoadButton_clicked()
     else if (QByteArray(cbuf,16).startsWith("SEGA SEGASATURN"))
     {
         //some boot image detected
-
-        SaveType tmpSave;
         //allocating new saveram
         TheConfig->LoadFromRegistry();
         NewDialog MyLittleNewDialog(&NewSettings);
@@ -352,187 +364,33 @@ void MainWindow::on_LoadButton_clicked()
         TheConfig->m_iFileSize = NewSettings.iImageSize*1024;
         TheConfig->SaveToRegistry();
 
-        int iLastUsedCluster=2;
-
-        //there are 2 known formats now: memcardplus and AR
-        //MemCardPlus  contains "MEMORY CARTRIDGE" id at 0x50
-        //EMS 8 Meg card  contains "NEW 8 MEG RAM CARD+" id at 0x60 and is compatible with MemCardPlus
-        //ActionReplay contains "ACTION REPLAY +U" id at 0x50
-        if ( (QByteArray(cbuf,96).right(16).startsWith("MEMORY CARTRIDGE")) ||
-             (QByteArray(cbuf,115).right(19).startsWith("NEW 8 MEG RAM CARD+")) )
+        //probing for different bootable cart types
+        if (true == ProbeMemCardPlus(&file_in))
         {
             //supposing it's a Memory Cart Plus
             QMessageBox msgBox;
             msgBox.setText(tr("Mem Cart Plus image detected. It is supported as read-only, so saves will be copied to a new image. This feature is experimental. If the import fails, you can mail this image to wasca.team@gmail.com for analysis."));
             msgBox.setStandardButtons(QMessageBox::Ok );
             msgBox.exec();
-            //searching every 256 bytes
-            file_in.seek(0);
-            file_in.read(cbuf_prev,256);
-            int iFileSize = file_in.size();
-            while (iFileSize - file_in.pos()  > 256)
-            {
-                //read next 256 bytes
-                file_in.read(cbuf,40);
-                //check if save
-                if ( (cbuf_prev[255]==-1) &&  (cbuf_prev[254]==-1) &&  (cbuf[0]!=-1) && (cbuf[22]==0) && (cbuf[23]==0))
-                {
-                    //check passed, inserting
-                    //datel format is compression-key-based
-                    //key is a unique 16-bit value at offset 34 in save
-                    //it never appears in original save (datel searches this value from 0x0000 to 0xFFFF
-                    //                                  most of the time it's 0x000X or 0x001X)
-                    //RLE sequences are 48-bit:
-                    //0xKKKK 0xXXXX 0xYYYY - write YYYY copies of XXXX, KKKK is key
-                    tmpSave.iBytes = (unsigned char)cbuf[31]+0x100*(unsigned char)cbuf[30]+0x10000*(unsigned char)cbuf[29]+0x1000000*(unsigned char)cbuf[28];
-                    int iCompressionKey = (unsigned char)cbuf[35]+0x100*(unsigned char)cbuf[34];
-                    int iCompressedBytes = (unsigned char)cbuf[39]+0x100*(unsigned char)cbuf[38]+0x10000*(unsigned char)cbuf[37]+0x1000000*(unsigned char)cbuf[36];
-                    int iDecompressedSize = 0;
-                    //check if we have enough space at the end of file
-                    //making a brutal check for inserting size:
-                    //each ClusterSize-4 requires additional 6 bytes (2 for SAT, 4 for header)
-                    //plus 36 additional (34 header, 2 zero-sat-entry)
-                    //if that won't fit into remaining clusters, boil out
-                    int iClustersRequired = (tmpSave.iBytes)/(TheConfig->m_iClusterSize-4);
-                    int iBytesRequired = tmpSave.iBytes+iClustersRequired*6+36;
-                    iClustersRequired = iBytesRequired/(TheConfig->m_iClusterSize-4);
-                    if ((TheConfig->m_iFileSize/TheConfig->m_iClusterSize - iLastUsedCluster) <= iClustersRequired)
-                    {
-                        //no space left in image to decompress into
-                        QMessageBox msgBox;
-                        msgBox.setText(tr("Not enough space in image to insert ")+QString(tmpSave.Name)+tr(" and possibly some other saves. Please retry with a bigger image size."));
-                        msgBox.exec();
-                        //enable name sorting
-                        iSortIndex = 0;
-                        SortDir = SORT_ASCENDING;
-                        //parse
-                        ParseHugeRAM();
-                        return;
-                    }
-                    tmpSave.iStartCluster = iLastUsedCluster+1;
-
-                    //check done, go on
-                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0x80;
-                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1] = 0x0;
-                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2] = 0x0;
-                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3] = 0x0;//making up counter
-                    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+4,11,QByteArray(&cbuf[0],11));//name
-                    HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+15] = cbuf[11];//lang code
-                    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+16,10,QByteArray(&cbuf[12],10));//comment
-                    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+26,4,QByteArray(&cbuf[24],4));//date
-                    HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+30,4,QByteArray(&cbuf[28],4));//size
-                    //calculate sat
-                    tmpSave.iSATSize = 1;
-                    tmpSave.Name = QByteArray(&cbuf[0],11);
-                    while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
-                        tmpSave.iSATSize++;
-                    //fill new sat
-                    tmpSave.iSATSize++;
-                    for (int i=0;i<(tmpSave.iSATSize-1);i++)
-                        tmpSave.SAT[i] = tmpSave.iStartCluster+i+1;
-                    tmpSave.SAT[tmpSave.iSATSize-1] = 0;
-                    //copy SAT to hugeram
-                    int iPointer = tmpSave.iStartCluster*TheConfig->m_iClusterSize + 34;
-                    for (int i=0;i<tmpSave.iSATSize;i++)
-                    {
-                        if (iPointer % TheConfig->m_iClusterSize == 0)
-                        {
-                            HugeRAM[iPointer] = 0;
-                            HugeRAM[iPointer+1] = 0;
-                            HugeRAM[iPointer+2] = 0;
-                            HugeRAM[iPointer+3] = (unsigned char)tmpSave.cCounter;
-                            iPointer+=4;
-                        }
-                        HugeRAM[iPointer] = (char) ( tmpSave.SAT[i] / 0x100 );
-                        HugeRAM[iPointer+1] = (char) ( tmpSave.SAT[i] % 0x100 );
-                        iPointer+=2;
-                    }
-                    //copy data
-                    int ic=0;
-                    while (ic<iCompressedBytes)
-                    {
-                        if (iPointer % TheConfig->m_iClusterSize == 0)
-                        {
-                            HugeRAM[iPointer] = 0;
-                            HugeRAM[iPointer+1] = 0;
-                            HugeRAM[iPointer+2] = 0;
-                            HugeRAM[iPointer+3] = 0;//make up counter
-                            iPointer+=4;
-                        }
-                        file_in.read(cbuf,2);
-                        ic+=2;
-                        if ((unsigned char)cbuf[1]+0x100*(unsigned char)cbuf[0] == iCompressionKey)
-                        {
-                            //it's an RLE sequence!
-                            file_in.read(cbuf,4);
-                            ic+=4;
-                            for (int j=0;j<((unsigned char)cbuf[3]+0x100*(unsigned char)cbuf[2]);j++)
-                            {
-                                HugeRAM[iPointer] = cbuf[0];
-                                iPointer++;
-                                HugeRAM[iPointer] = cbuf[1];
-                                iPointer++;
-                                iDecompressedSize+=2;
-                                //if we catch cluster boundary while executing RLE sequence, insert sys header
-                                if (iPointer % TheConfig->m_iClusterSize == 0)
-                                {
-                                    HugeRAM[iPointer] = 0;
-                                    HugeRAM[iPointer+1] = 0;
-                                    HugeRAM[iPointer+2] = 0;
-                                    HugeRAM[iPointer+3] = 0;//make up counter
-                                    iPointer+=4;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            HugeRAM[iPointer] = cbuf[0];
-                            iPointer++;
-                            HugeRAM[iPointer] = cbuf[1]; //this might be wrong for odd-sized saves, but cluster end is unused anyway, so who cares?
-                            iPointer++;
-                            iDecompressedSize+=2;
-                        }
-                    }
-                    if (iDecompressedSize != tmpSave.iBytes)
-                    {
-                        //decompression result is different
-                        QMessageBox msgBox;
-                        msgBox.setText(tr("Decompression error for ")+QString(tmpSave.Name)+tr(". Size should be %2, but decompressed into %3").arg(tmpSave.iBytes).arg(iDecompressedSize));
-                        msgBox.exec();
-                    }
-                    int iPos = file_in.pos() % 256;
-                    for (int i=0;i<iPos;i++)
-                        cbuf_prev[i] = HugeRAM[iPointer-iPos+i];
-                    file_in.read(&cbuf_prev[iPos],256-iPos);
-                    iLastUsedCluster+=tmpSave.iSATSize;
-                }
-                else
-                {
-                    //not a save, just some 256 bytes of whatever
-                    //we readed already 40 bytes, 216 to go
-                    file_in.read(&cbuf[40],216);
-                    for (i=0;i<256;i++) cbuf_prev[i] = cbuf[i];
-                }
-            }
-            //Mem Cart Plus parsing done
+            //parse resulting image
+            ImportMemCardPlus(&HugeRAM,&file_in,TheConfig->m_iClusterSize);
         }
-        else //if image is not looking like a Mem Cart Plus, trying as Action Replay
+        else if (true == ProbeEMS8Meg(&file_in))
         {
-            if (QByteArray(cbuf,96).right(16).startsWith("ACTION REPLAY"))
-            {
-                //supposing it's an Action Replay
-                QMessageBox msgBox;
-                msgBox.setText(tr("Action Replay image detected. It is supported as read-only, so saves will be copied to a new image. This feature is experimental. If the import fails, you can mail this image to wasca.team@gmail.com for analysis."));
-                msgBox.exec();
-            }
-            else
-            {
-                QMessageBox msgBox;
-                msgBox.setText(tr("Unknown bootable image detected. Trying as Action Relay. It is supported as read-only, so saves will be copied to a new image. This feature is experimental. If the import fails, you can mail this image to wasca.team@gmail.com for analysis."));
-                msgBox.exec();
-            }
+            //supposing it's a Memory Cart Plus
+            QMessageBox msgBox;
+            msgBox.setText(tr("EMS 8 Meg image detected. It is supported as read-only, so saves will be copied to a new image. This feature is experimental. If the import fails, you can mail this image to wasca.team@gmail.com for analysis."));
+            msgBox.setStandardButtons(QMessageBox::Ok );
+            msgBox.exec();
+            //parse resulting image
+            ImportEMS8Meg(&HugeRAM,&file_in,TheConfig->m_iClusterSize);
+        }
+        else if (true == ProbeActionReplay(&file_in))
+        {
             //supposing it's an Action Replay
-
+            QMessageBox msgBox;
+            msgBox.setText(tr("Action Replay image detected. It is supported as read-only, so saves will be copied to a new image. This feature is experimental. If the import fails, you can mail this image to wasca.team@gmail.com for analysis."));
+            msgBox.exec();
             //if image size provided is smaller than the one we decoded, expand it
             if (TheConfig->m_iFileSize < 0x80000)
             {
@@ -543,132 +401,7 @@ void MainWindow::on_LoadButton_clicked()
                 msgBox.setText(tr("Action Replay import: expanding image size to 512KB"));
                 msgBox.exec();
             }
-
-            //AR actually holds the full cart image in RLE-compressed format
-            //so we need to import it as-is, and then convert to user-provided
-            //culster size and image size
-            //ok, off we go
-            int iFileSize = file_in.size();
-            //parsing sequences
-            int iHeadersEnd = 0x20000;
-            file_in.seek(iHeadersEnd);
-            //check if it's an uncompressed AR image
-            file_in.read(cbuf,16);//get 16 bytes
-            file_in.seek(iHeadersEnd);//return to start
-            if (QByteArray(cbuf).startsWith("BackUpRam Format"))
-            {
-                //this is an uncompressed image, probably unpacked by Pseudo Saturn Kai, copy as-is
-                QByteArray b = file_in.readAll();
-                HugeRAM.replace(0,b.size(),b);
-            }
-            else
-            {
-                //compressed AR image
-                bool bHeaderFound;
-                int iPackedSize=-1;
-                int iUnpackedSize=-1;
-                unsigned char cActionReplayKey;
-                unsigned char cActionReplayKey2;
-                bool bKey2Used = false;
-                do
-                {
-                    bHeaderFound = false;
-                    file_in.read(cbuf,5);
-                    if (QByteArray(cbuf).startsWith("RLE01"))
-                    {
-                        //RLE01 header, parsing
-                        bHeaderFound = true;
-                        file_in.read(cbuf,1);
-                        cActionReplayKey = (unsigned char)cbuf[0];
-                        file_in.read(cbuf,4);
-                        iPackedSize = 0x1000000*(unsigned char)cbuf[0] + 0x10000*(unsigned char)cbuf[1] +
-                                0x100*(unsigned char)cbuf[2] + (unsigned char)cbuf[3];
-                        iHeadersEnd+=10;//size of RLE01 header
-                    }
-                    else if (QByteArray(cbuf).startsWith("DEF02"))
-                    {
-                        //DEF02 header, parsing
-                        bHeaderFound = true;
-                        file_in.read(cbuf,1);
-                        cActionReplayKey2 = (unsigned char)cbuf[0];
-                        bKey2Used = true;
-                        file_in.read(cbuf,4);
-                        iUnpackedSize = 0x1000000*(unsigned char)cbuf[0] + 0x10000*(unsigned char)cbuf[1] +
-                                0x100*(unsigned char)cbuf[2] + (unsigned char)cbuf[3];
-                        iHeadersEnd+=10;//size of RLE01 header
-                    }
-                }while (bHeaderFound);
-
-                file_in.seek(iHeadersEnd);
-
-                //now brutally unpacking it as a full image
-                int iPointer = 0;
-                while (file_in.pos() < (0x20000+iPackedSize))
-                {
-                    //AR format is compression-key-based
-                    //key is a 8-bit value stored at the card beginning
-                    //if it appears in oriinal save, it is encoded as KK 00
-                    //RLE sequences are 24-bit:
-                    //0xKK 0xXX 0xYY - write XX copies of YY, KK is key
-                    file_in.read(cbuf,1);
-                    if ((unsigned char)cbuf[0] == cActionReplayKey)
-                    {
-                        //it's an RLE sequence! which one?
-                        file_in.read(&(cbuf[1]),1);
-                        if ((unsigned char)cbuf[1] == 0x00)
-                        {
-                            //it's a KK 00 sequence, inserting single KK character
-                            HugeRAM[iPointer] = cbuf[0];//inserting KK
-                            iPointer++;
-                        }
-                        else
-                        {
-                            //it's a KK XX YY sequence
-                            file_in.read(&(cbuf[2]),1);
-                            for (int j=0;j<((unsigned char)cbuf[1]);j++)
-                            {
-                                HugeRAM[iPointer] = cbuf[2];
-                                iPointer++;
-                            }
-                        }
-                    }
-                    else if (bKey2Used && ((unsigned char)cbuf[0] == cActionReplayKey2))
-                    {
-                        //it's a key2 RLE sequence
-                        file_in.read(&(cbuf[1]),1);
-                        if ((unsigned char)cbuf[1] == 0x00)
-                        {
-                            //it's a KK 00 sequence, inserting single KK character
-                            HugeRAM[iPointer] = cbuf[0];//inserting KK
-                            iPointer++;
-                        }
-                        else
-                        {
-                            //it's a KK XX YY DD sequence
-                            //DD is an unknown field.
-                            //DD could be a dummy data, redundacy data, checksum, or something else
-                            //but the fact is DD is not needed for decompression
-                            file_in.read(&(cbuf[2]),2);
-                            for (int j=0;j<((unsigned char)cbuf[1]);j++)
-                            {
-                                HugeRAM[iPointer] = cbuf[2];
-                                iPointer++;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        //it's not an RLE sequence, just a databyte
-                        HugeRAM[iPointer] = cbuf[0];//inserting databyte
-                        iPointer++;
-                    }
-                }
-            }
-
-            //add header
-            for (i=0;i<4;i++)
-                HugeRAM.replace(16*i,16,QByteArray("BackUpRam Format"));
-
+            ImportActionReplay(&HugeRAM,&file_in);
             //okay, we inserted some existing image, now we try to convert it to user settings
             int iUserCluserSize = TheConfig->m_iClusterSize;
             //if cluster size is not 64, converting
@@ -681,14 +414,36 @@ void MainWindow::on_LoadButton_clicked()
                 TheConfig->m_iClusterSize = iUserCluserSize;
                 TheConfig->SaveToRegistry();
             }
-            //enable name sorting
-            iSortIndex = 0;
-            SortDir = SORT_ASCENDING;
-            //parse
-            ParseHugeRAM();
-            return;
+        }
+        else
+        {
+            QMessageBox msgBox;
+            msgBox.setText(tr("Unknown bootable image detected. Trying as Action Relay. It is supported as read-only, so saves will be copied to a new image. This feature is experimental. If the import fails, you can mail this image to wasca.team@gmail.com for analysis."));
+            msgBox.exec();
+            //if image size provided is smaller than the one we decoded, expand it
+            if (TheConfig->m_iFileSize < 0x80000)
+            {
+                TheConfig->m_iFileSize = 0x80000;
+                TheConfig->SaveToRegistry();
+                HugeRAM.resize(0x80000);
+                QMessageBox msgBox;
+                msgBox.setText(tr("Action Replay import: expanding image size to 512KB"));
+                msgBox.exec();
+            }
+            ImportActionReplay(&HugeRAM,&file_in);
+            //okay, we inserted some existing image, now we try to convert it to user settings
+            int iUserCluserSize = TheConfig->m_iClusterSize;
+            //if cluster size is not 64, converting
+            if (iUserCluserSize != 64)
+            {
+                TheConfig->m_iClusterSize = 64;
+                TheConfig->SaveToRegistry();
+                ParseHugeRAM();//required before repacking
+                RepackImage(64,iUserCluserSize);
+                TheConfig->m_iClusterSize = iUserCluserSize;
+                TheConfig->SaveToRegistry();
+            }
 
-            //Action Replay parsing done
         }
 
         //enable name sorting
@@ -698,6 +453,7 @@ void MainWindow::on_LoadButton_clicked()
         ParseHugeRAM();
         file_in.close();
         return;
+        //boot image processing done
     }
     else
     {
@@ -981,12 +737,12 @@ void MainWindow::RepackImage(int iOldClusterSize, int iNewClusterSize)
         iWritePointer+=2;
         //move read pointer to the end of sat
         int iSatIndex = 0;
-        for (int i=0;i<SavesList.at(iSave).iSATSize;i++)
+        for (int i=0;i<SavesList.at(iSave).SAT.size();i++)
         {
             if (0 == ((iReadPointer)%iOldClusterSize)) //sat reached end of cluster
             {
                 //move onto next cluster in sat
-                iReadPointer = SavesList.at(iSave).SAT[iSatIndex]*iOldClusterSize + 4;
+                iReadPointer = SavesList.at(iSave).SAT.at(iSatIndex)*iOldClusterSize + 4;
                 iSatIndex++;
             }
             iReadPointer+=2;
@@ -998,7 +754,7 @@ void MainWindow::RepackImage(int iOldClusterSize, int iNewClusterSize)
             if (0 == ((iReadPointer) % iOldClusterSize)) //hit end of old cluster
             {
                 //move onto next cluster in sat
-                iReadPointer = SavesList.at(iSave).SAT[iSatIndex]*iOldClusterSize + 4;
+                iReadPointer = SavesList.at(iSave).SAT.at(iSatIndex)*iOldClusterSize + 4;
                 iSatIndex++;
             }
             //check current write position
@@ -1193,13 +949,13 @@ void MainWindow::on_ExtractButton_clicked()
             file_out.write(buf,2);
         }
         //write 1st cluster
-        int iSATnDataSize = tmpSave.iSATSize*2 + tmpSave.iBytes;
+        int iSATnDataSize = tmpSave.SAT.size()*2 + tmpSave.iBytes;
         if ((iSATnDataSize + 34 ) < TheConfig->m_iClusterSize )
         {
             //writing single cluster
             if (TheConfig->m_bExtractSAT)
-                file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34,tmpSave.iSATSize*2),tmpSave.iSATSize*2);
-            file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34+tmpSave.iSATSize*2,tmpSave.iBytes),tmpSave.iBytes);
+                file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34,tmpSave.SAT.size()*2),tmpSave.SAT.size()*2);
+            file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34+tmpSave.SAT.size()*2,tmpSave.iBytes),tmpSave.iBytes);
         }
         else
         {
@@ -1207,14 +963,14 @@ void MainWindow::on_ExtractButton_clicked()
             if (TheConfig->m_bExtractSAT) //if saving SAT
                 file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34,TheConfig->m_iClusterSize),TheConfig->m_iClusterSize-34);
             else //not saving SAT
-                if (34+tmpSave.iSATSize*2 < TheConfig->m_iClusterSize) //if sat uses first cluster, but not fully
-                    file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34+tmpSave.iSATSize*2,TheConfig->m_iClusterSize),
-                                   TheConfig->m_iClusterSize-34-(tmpSave.iSATSize*2));
+                if (34+tmpSave.SAT.size()*2 < TheConfig->m_iClusterSize) //if sat uses first cluster, but not fully
+                    file_out.write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34+tmpSave.SAT.size()*2,TheConfig->m_iClusterSize),
+                                   TheConfig->m_iClusterSize-34-(tmpSave.SAT.size()*2));
 
         }
         //now remaining clusters
-        int iRemainingBytes = tmpSave.iSATSize*2+tmpSave.iBytes + 34 - TheConfig->m_iClusterSize;
-        for (int i=0;i<tmpSave.iSATSize-1;i++)
+        int iRemainingBytes = tmpSave.SAT.size()*2+tmpSave.iBytes + 34 - TheConfig->m_iClusterSize;
+        for (int i=0;i<tmpSave.SAT.size()-1;i++)
         {
             if ( iRemainingBytes > (TheConfig->m_iClusterSize-4)) //not counting headers
             {
@@ -1244,21 +1000,21 @@ void MainWindow::on_ExtractButton_clicked()
                 {
                     //full SAT cluster
                     if (TheConfig->m_bExtractSAT)
-                        file_out.write(HugeRAM.mid(tmpSave.SAT[i]*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
+                        file_out.write(HugeRAM.mid(tmpSave.SAT.at(i)*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
                 }
                 else if (iRemainingBytes <= tmpSave.iBytes)
                 {
                     //full data cluster
-                    file_out.write(HugeRAM.mid(tmpSave.SAT[i]*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
+                    file_out.write(HugeRAM.mid(tmpSave.SAT.at(i)*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
                 }
                 else
                 {
                     int iRemainingSAT = iRemainingBytes - tmpSave.iBytes;
                     //SAT with data in the end
                     if (TheConfig->m_bExtractSAT) //write as is
-                        file_out.write(HugeRAM.mid(tmpSave.SAT[i]*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
+                        file_out.write(HugeRAM.mid(tmpSave.SAT.at(i)*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
                     else  //only write data part
-                        file_out.write(HugeRAM.mid(tmpSave.SAT[i]*TheConfig->m_iClusterSize+4+iRemainingSAT,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4-iRemainingSAT);
+                        file_out.write(HugeRAM.mid(tmpSave.SAT.at(i)*TheConfig->m_iClusterSize+4+iRemainingSAT,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4-iRemainingSAT);
                 }
                 iRemainingBytes -= TheConfig->m_iClusterSize;
                 iRemainingBytes +=4;
@@ -1288,7 +1044,7 @@ void MainWindow::on_ExtractButton_clicked()
                     }
                     file_out.write(buf,4);
                 }
-                file_out.write(HugeRAM.mid((tmpSave.SAT[i]*TheConfig->m_iClusterSize)+4,iRemainingBytes),iRemainingBytes);
+                file_out.write(HugeRAM.mid((tmpSave.SAT.at(i)*TheConfig->m_iClusterSize)+4,iRemainingBytes),iRemainingBytes);
                 iRemainingBytes = 0;
             }
         }
@@ -1362,11 +1118,10 @@ void MainWindow::on_ExtractXMLButton_clicked()
         //collect all binary save data
         QByteArray tmpdata;
         tmpdata.clear();
-        int iSATLeft = tmpSave.iSATSize;
         int iCurrentCluster = -1;
         int iCurrentPos = 34;
         //skipping SAT first
-        for (int i=0;i<tmpSave.iSATSize*2;i++)
+        for (int i=0;i<tmpSave.SAT.size()*2;i++)
         {
             if (iCurrentPos == TheConfig->m_iClusterSize-1)
             {
@@ -1382,7 +1137,7 @@ void MainWindow::on_ExtractXMLButton_clicked()
             if (-1 == iCurrentCluster)
                 tmpdata.append(HugeRAM.at(tmpSave.iStartCluster*TheConfig->m_iClusterSize+iCurrentPos));
             else
-                tmpdata.append(HugeRAM.at(tmpSave.SAT[iCurrentCluster]*TheConfig->m_iClusterSize+iCurrentPos));
+                tmpdata.append(HugeRAM.at(tmpSave.SAT.at(iCurrentCluster)*TheConfig->m_iClusterSize+iCurrentPos));
 
             if (iCurrentPos == TheConfig->m_iClusterSize-1)
             {
@@ -1474,6 +1229,7 @@ void MainWindow::on_InsertButton_clicked()
     SysHeader1st.clear();
     bool bOverwriteDupes = false;
     bool bFirstDupeFound = false;
+    int iOldSATSize,iNewSATSize;
 
     //first we must check if file is recoverable after all
     //since some configs are not
@@ -1536,10 +1292,10 @@ void MainWindow::on_InsertButton_clicked()
         int iLastUsedCluster=1;
         for (int i=0; i<SavesList.size(); i++)
         {
-            for (int j=0; j<SavesList.at(i).iSATSize;j++)
+            for (int j=0; j<SavesList.at(i).SAT.size();j++)
             {
-                if (SavesList.at(i).SAT[j] > iLastUsedCluster)
-                    iLastUsedCluster = SavesList.at(i).SAT[j];
+                if (SavesList.at(i).SAT.at(j) > iLastUsedCluster)
+                    iLastUsedCluster = SavesList.at(i).SAT.at(j);
                 if (SavesList.at(i).iStartCluster > iLastUsedCluster)
                     iLastUsedCluster = SavesList.at(i).iStartCluster;
             }
@@ -1674,12 +1430,12 @@ void MainWindow::on_InsertButton_clicked()
             //and recalculating a new one later.
             //but we need to know SAT size in order to find data start, and
             //to correctly count data size if it is not provided in header
-            tmpSave.iSATSize=1;
+            iOldSATSize=1;
             file_in.read(buf,2);
             while ( (buf[0]!=0) || (buf[1]!= 0) )
             {
-                tmpSave.iSATSize++;
-                if ( (TheConfig->m_bInsertSysAll) && ((tmpSave.iSATSize*2+30)%(TheConfig->m_iClusterSize-4) == 0) )
+                iOldSATSize++;
+                if ( (TheConfig->m_bInsertSysAll) && ((iOldSATSize*2+30)%(TheConfig->m_iClusterSize-4) == 0) )
                 {
                     file_in.read(buf,4);//if moving onto next SAT cluster, skip 4 bytes
                     SysHeadersList.append(QByteArray(buf,4));
@@ -1695,10 +1451,10 @@ void MainWindow::on_InsertButton_clicked()
                 if (TheConfig->m_bInsertDescription) iTmpSize -= 10;
                 if (TheConfig->m_bInsertLanguage) iTmpSize -= 1;
                 if (TheConfig->m_bInsertName) iTmpSize -= 11;
-                if (TheConfig->m_bInsertSAT) iTmpSize -= tmpSave.iSATSize*2;
+                if (TheConfig->m_bInsertSAT) iTmpSize -= iOldSATSize*2;
                 if (TheConfig->m_bInsertSize) iTmpSize -= 4;
                 if (TheConfig->m_bInsertSys) iTmpSize -= 4;
-                if (TheConfig->m_bInsertSysAll) iTmpSize -= (tmpSave.iSATSize-1)*4;
+                if (TheConfig->m_bInsertSysAll) iTmpSize -= (iOldSATSize-1)*4;
             }
             //now size stuff
             if (TheConfig->m_bInsertSize)
@@ -1726,22 +1482,21 @@ void MainWindow::on_InsertButton_clicked()
             //calcuating old cluster size, this will be of need when insert_all_sys is on
             //for 1 cluster only SAT is sinlge 0, so it doesn't matter anyway
             //for more than 1 cluster : bytes/satsize < 252 for 256, > 254 for 512
-            if (tmpSave.iBytes / tmpSave.iSATSize < 253 )
+            if (tmpSave.iBytes / iOldSATSize < 253 )
                 iOldClusterSize = 256;
             else
                 iOldClusterSize = 512;
             //okay, we know size, calculate new SAT size
-            tmpSave.iSATSize = 1; //dumping old sat
-            while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
-                tmpSave.iSATSize++;
+            iNewSATSize = 1; //dumping old sat
+            while ( (30 + iNewSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > iNewSATSize)
+                iNewSATSize++;
             //fill new sat
-            tmpSave.iSATSize++;
-            for (int i=0;i<(tmpSave.iSATSize-1);i++)
-                tmpSave.SAT[i] = tmpSave.iStartCluster+i+1;
-            tmpSave.SAT[tmpSave.iSATSize-1] = 0;
+            for (int i=0;i<iNewSATSize;i++)
+                tmpSave.SAT.append(tmpSave.iStartCluster+i+1);
+            tmpSave.SAT.append(0);
             //copy SAT to hugeram
             int iPointer = tmpSave.iStartCluster*TheConfig->m_iClusterSize + 34;
-            for (int i=0;i<tmpSave.iSATSize;i++)
+            for (int i=0;i<tmpSave.SAT.size();i++)
             {
                 if (iPointer % TheConfig->m_iClusterSize == 0)
                 {
@@ -1751,8 +1506,8 @@ void MainWindow::on_InsertButton_clicked()
                     HugeRAM[iPointer+3] = tmpSave.cCounter;
                     iPointer+=4;
                 }
-                HugeRAM[iPointer] = (char) ( tmpSave.SAT[i] / 0x100 );
-                HugeRAM[iPointer+1] = (char) ( tmpSave.SAT[i] % 0x100 );
+                HugeRAM[iPointer] = (char) ( tmpSave.SAT.at(i) / 0x100 );
+                HugeRAM[iPointer+1] = (char) ( tmpSave.SAT.at(i) % 0x100 );
                 iPointer+=2;
             }
             //copy save itself to hugeram
@@ -1789,17 +1544,16 @@ void MainWindow::on_InsertButton_clicked()
                 tmpSave.iBytes = file_in.size()-file_in.pos();
 
             //calculate new SAT size
-            tmpSave.iSATSize = 1;
-            while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
-                tmpSave.iSATSize++;
+            iNewSATSize = 1;
+            while ( (30 + iNewSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > iNewSATSize)
+                iNewSATSize++;
             //fill new sat
-            tmpSave.iSATSize++;
-            for (int i=0;i<(tmpSave.iSATSize-1);i++)
-                tmpSave.SAT[i] = tmpSave.iStartCluster+i+1;
-            tmpSave.SAT[tmpSave.iSATSize-1] = 0;
+            for (int i=0;i<iNewSATSize;i++)
+                tmpSave.SAT.append(tmpSave.iStartCluster+i+1);
+            tmpSave.SAT.append(0);
             //copy SAT to hugeram
             int iPointer = tmpSave.iStartCluster*TheConfig->m_iClusterSize + 34;
-            for (int i=0;i<tmpSave.iSATSize;i++)
+            for (int i=0;i<tmpSave.SAT.size();i++)
             {
                 if (iPointer % TheConfig->m_iClusterSize == 0)
                 {
@@ -1809,8 +1563,8 @@ void MainWindow::on_InsertButton_clicked()
                     HugeRAM[iPointer+3] = tmpSave.cCounter;
                     iPointer+=4;
                 }
-                HugeRAM[iPointer] = (char) ( tmpSave.SAT[i] / 0x100 );
-                HugeRAM[iPointer+1] = (char) ( tmpSave.SAT[i] % 0x100 );
+                HugeRAM[iPointer] = (char) ( tmpSave.SAT.at(i) / 0x100 );
+                HugeRAM[iPointer+1] = (char) ( tmpSave.SAT.at(i) % 0x100 );
                 iPointer+=2;
             }
             //copy save itself to hugeram
@@ -1909,20 +1663,20 @@ void MainWindow::on_InsertButton_clicked()
         {
             //replacing remaining sys headers
             //new SAT size might be different, so choosing smaller
-            if (tmpSave.iSATSize > SysHeadersList.size())
+            if (tmpSave.SAT.size() > SysHeadersList.size())
                 for (int i=0;i<SysHeadersList.size();i++)
-                    HugeRAM.replace(tmpSave.SAT[i]*TheConfig->m_iClusterSize,4,SysHeadersList.at(i));
+                    HugeRAM.replace(tmpSave.SAT.at(i)*TheConfig->m_iClusterSize,4,SysHeadersList.at(i));
             else
-                for (int i=0;i<(tmpSave.iSATSize-1);i++)
-                    HugeRAM.replace(tmpSave.SAT[i]*TheConfig->m_iClusterSize,4,SysHeadersList.at(i));
+                for (int i=0;i<(tmpSave.SAT.size()-1);i++)
+                    HugeRAM.replace(tmpSave.SAT.at(i)*TheConfig->m_iClusterSize,4,SysHeadersList.at(i));
         }
         //then we are to patch counter, regardless of what the config is,
         //since user had a chance to edit it already
         //patching first entity
         HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3] = tmpSave.cCounter;
         //patching the rest
-        for (int i=1; i<(tmpSave.iSATSize); i++)
-            HugeRAM[tmpSave.SAT[i-1]*TheConfig->m_iClusterSize+3] = tmpSave.cCounter;
+        for (int i=1; i<(tmpSave.SAT.size()); i++)
+            HugeRAM[tmpSave.SAT.at(i-1)*TheConfig->m_iClusterSize+3] = tmpSave.cCounter;
         //write header
         HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+4,11,tmpSave.Name.left(11));
         buf[0] = (char) tmpSave.cLanguageCode;
@@ -1950,12 +1704,12 @@ void MainWindow::on_InsertXMLButton_clicked()
     QList<QByteArray> SysHeadersList;
     QByteArray SysHeader1st;
     SaveType tmpSave;
-    int iOldClusterSize;
     TheConfig->LoadFromRegistry();
     SysHeadersList.clear();
     SysHeader1st.clear();
     bool bOverwriteDupes = false;
     bool bFirstDupeFound = false;
+    int iNewSATSize;
 
     //choose file(s) to open
     QStringList fileNames = QFileDialog::getOpenFileNames(this,tr("Load Savegame"), "", NULL);
@@ -1981,10 +1735,10 @@ void MainWindow::on_InsertXMLButton_clicked()
         int iLastUsedCluster=1;
         for (int i=0; i<SavesList.size(); i++)
         {
-            for (int j=0; j<SavesList.at(i).iSATSize;j++)
+            for (int j=0; j<SavesList.at(i).SAT.size();j++)
             {
-                if (SavesList.at(i).SAT[j] > iLastUsedCluster)
-                    iLastUsedCluster = SavesList.at(i).SAT[j];
+                if (SavesList.at(i).SAT.at(j) > iLastUsedCluster)
+                    iLastUsedCluster = SavesList.at(i).SAT.at(j);
                 if (SavesList.at(i).iStartCluster > iLastUsedCluster)
                     iLastUsedCluster = SavesList.at(i).iStartCluster;
             }
@@ -2091,17 +1845,16 @@ void MainWindow::on_InsertXMLButton_clicked()
         tmpSave.DateTimeRaw = GetRaw4ByteFromDateTime(tmpSave.DateTime);
 
         //calculate new SAT size
-        tmpSave.iSATSize = 1;
-        while ( (30 + tmpSave.iSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > tmpSave.iSATSize)
-            tmpSave.iSATSize++;
+        iNewSATSize = 1;
+        while ( (30 + iNewSATSize*2 + tmpSave.iBytes)/(TheConfig->m_iClusterSize-4) > iNewSATSize)
+            iNewSATSize++;
         //fill new sat
-        tmpSave.iSATSize++;
-        for (int i=0;i<(tmpSave.iSATSize-1);i++)
-            tmpSave.SAT[i] = tmpSave.iStartCluster+i+1;
-        tmpSave.SAT[tmpSave.iSATSize-1] = 0;
+        for (int i=0;i<iNewSATSize;i++)
+            tmpSave.SAT.append(tmpSave.iStartCluster+i+1);
+        tmpSave.SAT.append(0);
         //copy SAT to hugeram
         int iPointer = tmpSave.iStartCluster*TheConfig->m_iClusterSize + 34;
-        for (int i=0;i<tmpSave.iSATSize;i++)
+        for (int i=0;i<tmpSave.SAT.size();i++)
         {
             if (iPointer % TheConfig->m_iClusterSize == 0)
             {
@@ -2111,8 +1864,8 @@ void MainWindow::on_InsertXMLButton_clicked()
                 HugeRAM[iPointer+3] = tmpSave.cCounter;
                 iPointer+=4;
             }
-            HugeRAM[iPointer] = (char) ( tmpSave.SAT[i] / 0x100 );
-            HugeRAM[iPointer+1] = (char) ( tmpSave.SAT[i] % 0x100 );
+            HugeRAM[iPointer] = (char) ( tmpSave.SAT.at(i) / 0x100 );
+            HugeRAM[iPointer+1] = (char) ( tmpSave.SAT.at(i) % 0x100 );
             iPointer+=2;
         }
 
@@ -2210,8 +1963,8 @@ void MainWindow::on_InsertXMLButton_clicked()
         //patching first entity
         HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3] = tmpSave.cCounter;
         //patching the rest
-        for (int i=1; i<(tmpSave.iSATSize); i++)
-            HugeRAM[tmpSave.SAT[i-1]*TheConfig->m_iClusterSize+3] = tmpSave.cCounter;
+        for (int i=1; i<(tmpSave.SAT.size()); i++)
+            HugeRAM[tmpSave.SAT.at(i-1)*TheConfig->m_iClusterSize+3] = tmpSave.cCounter;
         //write header
         HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+4,11,tmpSave.Name.left(11));
         buf[0] = (char) tmpSave.cLanguageCode;
@@ -2257,14 +2010,14 @@ void MainWindow::on_DeleteButton_clicked()
             break;
         case DeleteAllSys:
             HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize] = 0;
-            for (int i=0; i<tmpSave.iSATSize-1;i++)
-                HugeRAM[tmpSave.SAT[i]*TheConfig->m_iClusterSize] = 0;
+            for (int i=0; i<tmpSave.SAT.size()-1;i++)
+                HugeRAM[tmpSave.SAT.at(i)*TheConfig->m_iClusterSize] = 0;
             break;
         case DeleteFull:
             QByteArray empty = QByteArray(TheConfig->m_iClusterSize,(char)0);
             HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize,TheConfig->m_iClusterSize,empty);
-            for (int i=0; i<tmpSave.iSATSize-1;i++)
-                HugeRAM.replace(tmpSave.SAT[i]*TheConfig->m_iClusterSize,TheConfig->m_iClusterSize,empty);
+            for (int i=0; i<tmpSave.SAT.size()-1;i++)
+                HugeRAM.replace(tmpSave.SAT.at(i)*TheConfig->m_iClusterSize,TheConfig->m_iClusterSize,empty);
             break;
         }
     }

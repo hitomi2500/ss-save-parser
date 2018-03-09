@@ -20,6 +20,7 @@ EnterSaveDetailsDialog::EnterSaveDetailsDialog(SaveType *save, QWidget *parent) 
     ui->label_7->setText(QString("%1").arg(save->iBytes));
     wsave=save;
     this->setWindowTitle(this->windowTitle().append(" ").append(APP_VERSION));
+    ui->OptionalBox->setFlat(true);
 }
 
 EnterSaveDetailsDialog::~EnterSaveDetailsDialog()
