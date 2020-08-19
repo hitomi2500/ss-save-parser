@@ -28,9 +28,9 @@ void MyLittleScene::mousePressEvent(QGraphicsSceneMouseEvent * event)
     {
         if (pMap->SavesList->at(i).iStartCluster == iClusterNumber)
             iFoundRow = i;
-        for (int j=0;j<pMap->SavesList->at(i).iSATSize-1;j++)
+        for (int j=0;j<pMap->SavesList->at(i).SAT.size()-1;j++)
         {
-            if (pMap->SavesList->at(i).SAT[j]==iClusterNumber)
+            if (pMap->SavesList->at(i).SAT.at(j)==iClusterNumber)
                 iFoundRow = i;
         }
     }
@@ -104,10 +104,10 @@ void ImageMapWindow::UpdateData()
         scene->addRect(QRect(iX*CELL_SIZE+1,iY*CELL_SIZE+1,CELL_SIZE-2,CELL_SIZE-2),QPen(color),QBrush(color,Qt::SolidPattern));
         scene->addRect(QRect(iX*CELL_SIZE+3,iY*CELL_SIZE+3,CELL_SIZE-6,CELL_SIZE-6),QPen(Qt::white),QBrush(Qt::white,Qt::SolidPattern));
         //other clusters
-        for (int j=0;j<SavesList->at(i).iSATSize-1;j++)
+        for (int j=0;j<SavesList->at(i).SAT.size()-1;j++)
         {
-            iX = SavesList->at(i).SAT[j]%iMapWidth;
-            iY = SavesList->at(i).SAT[j]/iMapWidth;
+            iX = SavesList->at(i).SAT.at(j)%iMapWidth;
+            iY = SavesList->at(i).SAT.at(j)/iMapWidth;
             scene->addRect(QRect(iX*CELL_SIZE+1,iY*CELL_SIZE+1,CELL_SIZE-2,CELL_SIZE-2),QPen(color),QBrush(color,Qt::SolidPattern));
         }
         //list
@@ -148,10 +148,10 @@ void ImageMapWindow::UpdateData(int iIndex)
     scene->addRect(QRect(iX*CELL_SIZE+1,iY*CELL_SIZE+1,CELL_SIZE-2,CELL_SIZE-2),QPen(color),QBrush(color,Qt::SolidPattern));
     scene->addRect(QRect(iX*CELL_SIZE+3,iY*CELL_SIZE+3,CELL_SIZE-6,CELL_SIZE-6),QPen(Qt::white),QBrush(Qt::white,Qt::SolidPattern));
     //other clusters
-    for (int j=0;j<SavesList->at(iIndex).iSATSize-1;j++)
+    for (int j=0;j<SavesList->at(iIndex).SAT.size()-1;j++)
     {
-        iX = SavesList->at(iIndex).SAT[j]%iMapWidth;
-        iY = SavesList->at(iIndex).SAT[j]/iMapWidth;
+        iX = SavesList->at(iIndex).SAT.at(j)%iMapWidth;
+        iY = SavesList->at(iIndex).SAT.at(j)/iMapWidth;
         scene->addRect(QRect(iX*CELL_SIZE+1,iY*CELL_SIZE+1,CELL_SIZE-2,CELL_SIZE-2),QPen(color),QBrush(color,Qt::SolidPattern));
     }
     //list
@@ -183,10 +183,10 @@ void ImageMapWindow::blink()
             scene->addLine(QLine(iX*CELL_SIZE+1,iY*CELL_SIZE+CELL_SIZE-1,iX*CELL_SIZE+CELL_SIZE-1,iY*CELL_SIZE+CELL_SIZE-1),QPen(Qt::white));
             scene->addLine(QLine(iX*CELL_SIZE+1,iY*CELL_SIZE+1,iX*CELL_SIZE+1,iY*CELL_SIZE+CELL_SIZE-1),QPen(Qt::white));
             scene->addLine(QLine(iX*CELL_SIZE+CELL_SIZE-1,iY*CELL_SIZE+1,iX*CELL_SIZE+CELL_SIZE-1,iY*CELL_SIZE+CELL_SIZE-1),QPen(Qt::white));
-            for (int j=0;j<SavesList->at(iCurrentRow).iSATSize-1;j++)
+            for (int j=0;j<SavesList->at(iCurrentRow).SAT.size()-1;j++)
             {
-                iX = SavesList->at(iCurrentRow).SAT[j]%iMapWidth;
-                iY = SavesList->at(iCurrentRow).SAT[j]/iMapWidth;
+                iX = SavesList->at(iCurrentRow).SAT.at(j)%iMapWidth;
+                iY = SavesList->at(iCurrentRow).SAT.at(j)/iMapWidth;
                 scene->addLine(QLine(iX*CELL_SIZE+1,iY*CELL_SIZE+1,iX*CELL_SIZE+CELL_SIZE-1,iY*CELL_SIZE+1),QPen(Qt::white));
                 scene->addLine(QLine(iX*CELL_SIZE+1,iY*CELL_SIZE+CELL_SIZE-1,iX*CELL_SIZE+CELL_SIZE-1,iY*CELL_SIZE+CELL_SIZE-1),QPen(Qt::white));
                 scene->addLine(QLine(iX*CELL_SIZE+1,iY*CELL_SIZE+1,iX*CELL_SIZE+1,iY*CELL_SIZE+CELL_SIZE-1),QPen(Qt::white));
@@ -205,10 +205,10 @@ void ImageMapWindow::blink()
             scene->addLine(QLine(iX*CELL_SIZE+1,iY*CELL_SIZE+CELL_SIZE-1,iX*CELL_SIZE+CELL_SIZE-1,iY*CELL_SIZE+CELL_SIZE-1),QPen(Qt::black));
             scene->addLine(QLine(iX*CELL_SIZE+1,iY*CELL_SIZE+1,iX*CELL_SIZE+1,iY*CELL_SIZE+CELL_SIZE-1),QPen(Qt::black));
             scene->addLine(QLine(iX*CELL_SIZE+CELL_SIZE-1,iY*CELL_SIZE+1,iX*CELL_SIZE+CELL_SIZE-1,iY*CELL_SIZE+CELL_SIZE-1),QPen(Qt::black));
-            for (int j=0;j<SavesList->at(iCurrentRow).iSATSize-1;j++)
+            for (int j=0;j<SavesList->at(iCurrentRow).SAT.size()-1;j++)
             {
-                iX = SavesList->at(iCurrentRow).SAT[j]%iMapWidth;
-                iY = SavesList->at(iCurrentRow).SAT[j]/iMapWidth;
+                iX = SavesList->at(iCurrentRow).SAT.at(j)%iMapWidth;
+                iY = SavesList->at(iCurrentRow).SAT.at(j)/iMapWidth;
                 scene->addLine(QLine(iX*CELL_SIZE+1,iY*CELL_SIZE+1,iX*CELL_SIZE+CELL_SIZE-1,iY*CELL_SIZE+1),QPen(Qt::black));
                 scene->addLine(QLine(iX*CELL_SIZE+1,iY*CELL_SIZE+CELL_SIZE-1,iX*CELL_SIZE+CELL_SIZE-1,iY*CELL_SIZE+CELL_SIZE-1),QPen(Qt::black));
                 scene->addLine(QLine(iX*CELL_SIZE+1,iY*CELL_SIZE+1,iX*CELL_SIZE+1,iY*CELL_SIZE+CELL_SIZE-1),QPen(Qt::black));

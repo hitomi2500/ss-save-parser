@@ -54,11 +54,11 @@ QDateTime GetDateTimeFromSSF4Byte(QByteArray buf)
 QByteArray GetSSF4ByteFromDateTime(QDateTime dt)
 {
     char buf[4];
-    qint64 tim = 0;
+    //qint64 tim = 0;
     QDateTime d;
     d.setDate(QDate(1980,1,1));
     d.setTime(QTime(0,0,0,0));
-    tim = (dt.toMSecsSinceEpoch() - d.toMSecsSinceEpoch() )/60000  + dt.offsetFromUtc()/60 ;
+    //tim = (dt.toMSecsSinceEpoch() - d.toMSecsSinceEpoch() )/60000  + dt.offsetFromUtc()/60 ;
     buf[3] = (dt.date().year()-1980)/2;
     buf[2] = 0x80*((dt.date().year()-1980)%2);
     buf[2] |= 0x08*(dt.date().month()+1);
@@ -110,21 +110,27 @@ if (save->DateTime.date().year() < 1990) return NotAHeader; //now that's too neg
 return ParseOk;
 }
 
-ParseResult ParseSAT(QByteArray buf, SaveType *save, int ClusterSize)
+ParseResult ParseSAT(QByteArray * hugeram, SaveType *save, int iClusterSize)
 {
     //okay, now SAT stuff
     //calculating SAT size
-    int i=0;
-    int i2=0;
-    short s = 1;
-    while (s)
+    int iCurrentCluster = save->iStartCluster;
+    int iCurrentClusterIndex = 0;
+    int iCurrentPointer = 34;
+    short sCurrentEntry = 1; //any nonzero will do
+    save->SAT.clear();
+    while (sCurrentEntry)
     {
-        if (0 == ((i*2+34)%ClusterSize)) i+=2;//jumping over cluster header
-        s =  (unsigned char)(buf.at(i*2))*0x100 + (unsigned char)(buf.at(1+i*2));
-        save->SAT[i2]=s;
-        i++;
-        i2++;
+        if (iCurrentPointer >= iClusterSize)//we hit end of cluster
+        {
+            iCurrentPointer = 4;//skipping header of the next cluster
+            iCurrentClusterIndex++;
+            iCurrentCluster = save->SAT.at(iCurrentClusterIndex-1);
+        }
+        sCurrentEntry =  (unsigned char)(hugeram->at(iCurrentCluster*iClusterSize+iCurrentPointer))*0x100
+                       + (unsigned char)(hugeram->at(iCurrentCluster*iClusterSize+iCurrentPointer+1));
+        save->SAT.append(sCurrentEntry);
+        iCurrentPointer+=2;
     }
-    save->iSATSize = i2;
     return ParseOk;
 }
