@@ -105,8 +105,8 @@ save->iBlocks = ceil((32.0+save->iBytes)/64.0);
 //some sanity checks
 if (save->iBytes > 1024*1024) return NotAHeader; //is there a save bigger than 1M?
 if (save->iBytes <= 0) return NotAHeader; //now that's too negative
-if (save->DateTime.date().year() > 2100) return NotAHeader; //someone playing Saturn in 22th century? I love you!
-if (save->DateTime.date().year() < 1990) return NotAHeader; //now that's too negative
+if (save->DateTime.date().year() > 2500) return NotAHeader; //someone playing Saturn in 26th century? I love you!
+if (save->DateTime.date().year() < 1900) return NotAHeader; //now that's too negative
 return ParseOk;
 }
 

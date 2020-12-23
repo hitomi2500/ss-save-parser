@@ -9,5 +9,6 @@
         <file>new.xpm</file>
         <file>cart_to_game.xpm</file>
         <file>game_to_cart.xpm</file>
+        <file>map.xpm</file>
     </qresource>
 </RCC>

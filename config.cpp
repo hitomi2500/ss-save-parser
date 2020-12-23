@@ -2,12 +2,10 @@
 
 Config::Config()
 {
-    TheSettings = new QSettings("Null Record Studio","Sega Saturn Backup RAM Parser");
 }
 
 Config::~Config()
 {
-    delete TheSettings;
 }
 
 void Config::UpdateFlags()
@@ -136,6 +134,7 @@ void Config::UpdateFlags()
 
 void Config::SaveToRegistry()
 {
+    TheSettings = new QSettings("Null Record Studio","Sega Saturn Backup RAM Parser");
     UpdateFlags();
     TheSettings->setValue("Extract Mode",(int)m_ExtractMode);
     TheSettings->setValue("Extract Sys",m_bExtractSys);
@@ -162,10 +161,12 @@ void Config::SaveToRegistry()
     TheSettings->setValue("Ask For Format At Every Extract",m_bAskFormatAtEveryExtract);
     TheSettings->setValue("Ask For Format At Every Insert",m_bAskFormatAtEveryInsert);
     TheSettings->sync();
+    delete TheSettings;
 }
 
 void Config::LoadFromRegistry()
 {
+    TheSettings = new QSettings("Null Record Studio","Sega Saturn Backup RAM Parser");
     m_ExtractMode = (ExtractMode)TheSettings->value("Extract Mode").toInt();
     m_bExtractSys = TheSettings->value("Extract Sys").toBool();
     m_bExtractSysAll = TheSettings->value("Extract Sys All").toBool();
@@ -191,4 +192,5 @@ void Config::LoadFromRegistry()
     m_bAskFormatAtEveryExtract = (bool)TheSettings->value("Ask For Format At Every Extract").toBool();
     m_bAskFormatAtEveryInsert = (bool)TheSettings->value("Ask For Format At Every Insert").toBool();
     UpdateFlags();
+    delete TheSettings;
 }

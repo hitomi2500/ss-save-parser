@@ -55,6 +55,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->ExtractXMLButton->setIconSize(QSize(73,23));
     ui->InsertXMLButton->setIcon(QIcon(":/images/game_to_cart.xpm"));
     ui->InsertXMLButton->setIconSize(QSize(73,23));
+    ui->ImageMapButton->setIcon(QIcon(":/images/map.xpm"));
+    ui->ImageMapButton->setIconSize(QSize(73,23));
     ui->tableWidget->setHorizontalHeaderLabels(sList);
     ui->tableWidget->resizeColumnsToContents();
     ui->tableWidget->resizeRowsToContents();
@@ -160,31 +162,31 @@ void MainWindow::ParseHugeRAM()
                 switch (iSortIndex)
                 {
                 case 0:
-                    if (SavesList.at(i).Name < SavesList.at(j).Name ) SavesList.swap(i,j);
+                    if (SavesList.at(i).Name < SavesList.at(j).Name ) SavesList.swapItemsAt(i,j);
                     break;
                 case 1:
-                    if (SavesList.at(i).Comment < SavesList.at(j).Comment ) SavesList.swap(i,j);
+                    if (SavesList.at(i).Comment < SavesList.at(j).Comment ) SavesList.swapItemsAt(i,j);
                     break;
                 case 2:
-                    if (SavesList.at(i).cLanguageCode < SavesList.at(j).cLanguageCode ) SavesList.swap(i,j);
+                    if (SavesList.at(i).cLanguageCode < SavesList.at(j).cLanguageCode ) SavesList.swapItemsAt(i,j);
                     break;
                 case 3:
-                    if (SavesList.at(i).DateTime < SavesList.at(j).DateTime ) SavesList.swap(i,j);
+                    if (SavesList.at(i).DateTime < SavesList.at(j).DateTime ) SavesList.swapItemsAt(i,j);
                     break;
                 case 4:
-                    if (SavesList.at(i).iBytes < SavesList.at(j).iBytes ) SavesList.swap(i,j);
+                    if (SavesList.at(i).iBytes < SavesList.at(j).iBytes ) SavesList.swapItemsAt(i,j);
                     break;
                 case 5:
-                    if (SavesList.at(i).iBlocks < SavesList.at(j).iBlocks ) SavesList.swap(i,j);
+                    if (SavesList.at(i).iBlocks < SavesList.at(j).iBlocks ) SavesList.swapItemsAt(i,j);
                     break;
                 case 6:
-                    if (SavesList.at(i).iStartCluster < SavesList.at(j).iStartCluster ) SavesList.swap(i,j);
+                    if (SavesList.at(i).iStartCluster < SavesList.at(j).iStartCluster ) SavesList.swapItemsAt(i,j);
                     break;
                 case 7:
-                    if (SavesList.at(i).SAT.size() < SavesList.at(j).SAT.size() ) SavesList.swap(i,j);
+                    if (SavesList.at(i).SAT.size() < SavesList.at(j).SAT.size() ) SavesList.swapItemsAt(i,j);
                     break;
                 case 8:
-                    if (SavesList.at(i).cCounter < SavesList.at(j).cCounter ) SavesList.swap(i,j);
+                    if (SavesList.at(i).cCounter < SavesList.at(j).cCounter ) SavesList.swapItemsAt(i,j);
                     break;
                 }
             }
@@ -193,31 +195,31 @@ void MainWindow::ParseHugeRAM()
                 switch (iSortIndex)
                 {
                 case 0:
-                    if (SavesList.at(i).Name > SavesList.at(j).Name ) SavesList.swap(i,j);
+                    if (SavesList.at(i).Name > SavesList.at(j).Name ) SavesList.swapItemsAt(i,j);
                     break;
                 case 1:
-                    if (SavesList.at(i).Comment > SavesList.at(j).Comment ) SavesList.swap(i,j);
+                    if (SavesList.at(i).Comment > SavesList.at(j).Comment ) SavesList.swapItemsAt(i,j);
                     break;
                 case 2:
-                    if (SavesList.at(i).cLanguageCode > SavesList.at(j).cLanguageCode ) SavesList.swap(i,j);
+                    if (SavesList.at(i).cLanguageCode > SavesList.at(j).cLanguageCode ) SavesList.swapItemsAt(i,j);
                     break;
                 case 3:
-                    if (SavesList.at(i).DateTime > SavesList.at(j).DateTime ) SavesList.swap(i,j);
+                    if (SavesList.at(i).DateTime > SavesList.at(j).DateTime ) SavesList.swapItemsAt(i,j);
                     break;
                 case 4:
-                    if (SavesList.at(i).iBytes > SavesList.at(j).iBytes ) SavesList.swap(i,j);
+                    if (SavesList.at(i).iBytes > SavesList.at(j).iBytes ) SavesList.swapItemsAt(i,j);
                     break;
                 case 5:
-                    if (SavesList.at(i).iBlocks > SavesList.at(j).iBlocks ) SavesList.swap(i,j);
+                    if (SavesList.at(i).iBlocks > SavesList.at(j).iBlocks ) SavesList.swapItemsAt(i,j);
                     break;
                 case 6:
-                    if (SavesList.at(i).iStartCluster > SavesList.at(j).iStartCluster ) SavesList.swap(i,j);
+                    if (SavesList.at(i).iStartCluster > SavesList.at(j).iStartCluster ) SavesList.swapItemsAt(i,j);
                     break;
                 case 7:
-                    if (SavesList.at(i).SAT.size() > SavesList.at(j).SAT.size() ) SavesList.swap(i,j);
+                    if (SavesList.at(i).SAT.size() > SavesList.at(j).SAT.size() ) SavesList.swapItemsAt(i,j);
                     break;
                 case 8:
-                    if (SavesList.at(i).cCounter > SavesList.at(j).cCounter ) SavesList.swap(i,j);
+                    if (SavesList.at(i).cCounter > SavesList.at(j).cCounter ) SavesList.swapItemsAt(i,j);
                     break;
                 }
             }
@@ -239,7 +241,7 @@ void MainWindow::ParseHugeRAM()
     ui->tableWidget->setHorizontalHeaderLabels(sList);
     QTextCodec *codec = QTextCodec::codecForName("Shift-JIS");
     QTableWidgetItem *newItem;
-    QString Items[8];
+    QString Items[9];
     for (i=0; i<SavesList.size(); i++)
     {
         tmpSave = SavesList.at(i);
@@ -519,7 +521,7 @@ void MainWindow::on_LoadButton_clicked()
             j++;
         }
     }
-    HugeRAM.reserve(TheConfig->m_iFileSize);
+    HugeRAM.resize(TheConfig->m_iFileSize);
     switch (j)
     {
     //everything with a claster less than 64 is treated as 64
@@ -1057,7 +1059,6 @@ void MainWindow::on_ExtractButton_clicked()
 void MainWindow::on_ExtractXMLButton_clicked()
 {
     //extract save from image
-    char buf[256];
     SaveType tmpSave;
     QFile file_out;
     QString fileName;
@@ -1194,7 +1195,7 @@ void MainWindow::on_ExtractXMLButton_clicked()
         xml_write.writeEndElement();//Sega Saturn Save
         xml_write.writeEndDocument();
         //1st cluster header
-        buf[0] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize];
+        /*buf[0] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize];
         buf[1] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1];
         buf[2] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2];
         buf[3] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3];
@@ -1207,7 +1208,7 @@ void MainWindow::on_ExtractXMLButton_clicked()
         buf[0]=(unsigned char)(tmpSave.iBytes/0x1000000);
         buf[1]=(unsigned char)(tmpSave.iBytes/0x10000);
         buf[2]=(unsigned char)(tmpSave.iBytes/0x100);
-        buf[3]=(unsigned char)(tmpSave.iBytes);
+        buf[3]=(unsigned char)(tmpSave.iBytes);*/
         //file_out.write(buf,4);
         //write data
         file_out.close();
@@ -1230,6 +1231,7 @@ void MainWindow::on_InsertButton_clicked()
     bool bOverwriteDupes = false;
     bool bFirstDupeFound = false;
     int iOldSATSize,iNewSATSize;
+    Config BackupConfig;
 
     //first we must check if file is recoverable after all
     //since some configs are not
@@ -1259,6 +1261,7 @@ void MainWindow::on_InsertButton_clicked()
     if (fileNames.isEmpty()) return; //return if user cancel
     //cycle through each save
     QString fileName;
+    bool bBUPformat = false;
     for (int iListIndex=0; iListIndex<fileNames.size(); iListIndex++)
     {
         fileName = fileNames.at(iListIndex);
@@ -1271,6 +1274,30 @@ void MainWindow::on_InsertButton_clicked()
             return;
         }
         //file opened, move on
+
+        //if the opened file is .BUP, expect the format to be known
+        if(fileName.toUpper().endsWith(".BUP"))
+        {
+            //do a simple signature check
+            QByteArray buf = file_in.read(4);
+            if (buf.startsWith("Vmem"))
+            {
+                //signature found, this is BUP file after all
+                bBUPformat = true;
+                //backing up current config
+                BackupConfig = *TheConfig;
+                //updating config specifically for BUP
+                TheConfig->m_InsertMode = InsertManual;
+                TheConfig->m_bInsertSys = false;
+                TheConfig->m_bInsertName = true;
+                TheConfig->m_bInsertLanguage = true;
+                TheConfig->m_bInsertDescription = true;
+                TheConfig->m_bInsertDateTime = true;
+                TheConfig->m_bInsertSize = true;
+                TheConfig->m_bInsertSAT = false;
+                file_in.seek(16);
+            }
+        }
 
         //change config per save if required
         if (TheConfig->m_bAskFormatAtEveryInsert)
@@ -1312,6 +1339,8 @@ void MainWindow::on_InsertButton_clicked()
             QMessageBox msgBox;
             msgBox.setText(tr("Not enough space in image to insert save file %1.").arg(fileName));
             msgBox.exec();
+            if (true == bBUPformat)
+                *TheConfig = BackupConfig;
             return;
         }
         tmpSave.iStartCluster = iLastUsedCluster+1;
@@ -1334,6 +1363,7 @@ void MainWindow::on_InsertButton_clicked()
             //no counter was provided, making one up
             tmpSave.cCounter = 0;
         }
+
         if (TheConfig->m_bInsertName)
         {
             file_in.read(buf,11);
@@ -1346,6 +1376,7 @@ void MainWindow::on_InsertButton_clicked()
             //this is windows-specific, change something if porting
             tmpSave.Name = codec->fromUnicode(fileName.mid(fileName.lastIndexOf(QChar('/'))+1,11));
         }
+
         if (TheConfig->m_bInsertLanguage)
         {
             file_in.read(buf,1);
@@ -1356,6 +1387,7 @@ void MainWindow::on_InsertButton_clicked()
             //no language code was provided, making one up
             tmpSave.cLanguageCode = 0;
         }
+
         if (TheConfig->m_bInsertDescription)
         {
             file_in.read(buf,10);
@@ -1376,12 +1408,19 @@ void MainWindow::on_InsertButton_clicked()
             buf[9] = 0xDB; //ro
             tmpSave.Comment = QByteArray(buf,10);
         }
+
         //SSF specific - skip 1 zero and get language code after description
         if (TheConfig->m_InsertMode == InsertSSF)
         {
             file_in.read(buf,2);
             tmpSave.cLanguageCode = (unsigned char) buf[1];
         }
+
+        if (true == bBUPformat)
+        {
+            file_in.read(buf,2); //skipping 2 unknown bytes for BUP
+        }
+
         if (TheConfig->m_bInsertDateTime)
         {
             file_in.read(buf,4);
@@ -1404,6 +1443,7 @@ void MainWindow::on_InsertButton_clicked()
             //convert that one to raw
             tmpSave.DateTimeRaw = GetRaw4ByteFromDateTime(tmpSave.DateTime);
         }
+
         if (TheConfig->m_bInsertSize)
         {
             file_in.read(buf,4);
@@ -1417,11 +1457,13 @@ void MainWindow::on_InsertButton_clicked()
             //no file size is provided, counting it
             //this value is not countable yet, we will count it later, after we'll read SAT
         }
+
         //Druid II specific - skip 2 zeroes after header
         if (TheConfig->m_InsertMode == InsertDruidII)
         {
             file_in.read(buf,2);
         }
+
         //sat
         if (TheConfig->m_bInsertSAT)
         {
@@ -1567,6 +1609,8 @@ void MainWindow::on_InsertButton_clicked()
                 HugeRAM[iPointer+1] = (char) ( tmpSave.SAT.at(i) % 0x100 );
                 iPointer+=2;
             }
+            if (true == bBUPformat)
+                file_in.seek(64);//skipping to data
             //copy save itself to hugeram
             for (int i=0; i< tmpSave.iBytes; i++)
             {
@@ -1592,7 +1636,12 @@ void MainWindow::on_InsertButton_clicked()
         if (fileNames.size() == 1)
         {
             EnterSaveDetailsDialog checkDialog(&tmpSave);
-            if (checkDialog.exec() == QDialog::Rejected) return;
+            if (checkDialog.exec() == QDialog::Rejected)
+            {
+                if (true == bBUPformat)
+                    *TheConfig = BackupConfig;
+                return;
+            }
         }
 
         //check for doubling saves with the same name
@@ -1689,6 +1738,9 @@ void MainWindow::on_InsertButton_clicked()
         buf[3] = (unsigned char)(tmpSave.iBytes % 0x100);
         HugeRAM.replace(tmpSave.iStartCluster*TheConfig->m_iClusterSize+30,4,QByteArray(buf,4));
         file_in.close();
+        //restoring config if BUP format was used
+        if (true == bBUPformat)
+            *TheConfig = BackupConfig;
         ParseHugeRAM();
         SysHeadersList.clear();
     }//cycle through all saves
