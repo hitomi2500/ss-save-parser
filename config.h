@@ -4,8 +4,8 @@
 #include <QSettings>
 #include <QDateTime>
 
-enum ExtractMode {ExtractSSF,ExtractAR,ExtractFull,ExtractRaw,ExtractDruidII,ExtractManual};
-enum InsertMode {InsertSSF,InsertAR,InsertFull,InsertRaw,InsertDruidII,InsertManual};
+enum ExtractMode {ExtractMednafen,ExtractYabause,ExtractSSF,ExtractAR,ExtractFull,ExtractRaw,ExtractDruidII,ExtractManual};
+enum InsertMode {InsertMednafen,InsertYabause,InsertSSF,InsertAR,InsertFull,InsertRaw,InsertDruidII,InsertManual};
 enum DeleteMode {DeleteSingleSys,DeleteAllSys,DeleteFull};
 
 typedef struct MySave{

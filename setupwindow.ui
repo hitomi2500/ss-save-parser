@@ -20,7 +20,7 @@
       <string/>
      </property>
      <property name="currentIndex">
-      <number>2</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="CommonTab">
       <attribute name="title">
@@ -342,6 +342,13 @@
          </property>
         </widget>
        </item>
+       <item row="0" column="4">
+        <widget class="QLabel" name="label_12">
+         <property name="text">
+          <string>Extraction mode is ignored for .bup and .xml</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="InsertTab">
@@ -634,6 +641,13 @@
         <widget class="QCheckBox" name="checkBox_Ask_Every_Insert">
          <property name="text">
           <string>Ask for mode at every insert</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="6">
+        <widget class="QLabel" name="label_21">
+         <property name="text">
+          <string>Insertion mode is ignored for .bup and .xml</string>
          </property>
         </widget>
        </item>
