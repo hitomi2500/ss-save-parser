@@ -18,6 +18,7 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
+    insert.cpp \
     mainwindow.cpp \
     setupwindow.cpp \
     config.cpp \

@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QDate>
+#include <QFile>
 #include <QTableWidget>
 #include "setupwindow.h"
 #include "imagemapwindow.h"
@@ -51,11 +52,7 @@ private slots:
 
     void on_InsertButton_clicked();
 
-    void on_InsertXMLButton_clicked();
-
     void on_ExtractButton_clicked();
-
-    void on_ExtractXMLButton_clicked();
 
     void on_DeleteButton_clicked();
 
@@ -77,6 +74,11 @@ private:
     FileIOSettingsType IOSettings;
     NewSettingsType NewSettings;
     void ParseHugeRAM();
+    void InsertSaves();
+    void InsertBinarySave(QFile *file_in, bool bSingle);
+    void InsertBUPSave(QFile *file_in, bool bSingle);
+    void InsertXMLSave(QFile *file_in, bool bSingle);
+    bool GlobalBinaryInsertChecks();
 
 };
 

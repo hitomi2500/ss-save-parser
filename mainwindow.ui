@@ -109,20 +109,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="ExtractXMLButton">
-        <property name="text">
-         <string>Extract XML</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="InsertXMLButton">
-        <property name="text">
-         <string>Insert XML</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QPushButton" name="EditButton">
         <property name="text">
          <string>Edit</string>
