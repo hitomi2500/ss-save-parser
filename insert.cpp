@@ -58,6 +58,8 @@ void MainWindow::InsertSaves()
                 }
                 InsertBinarySave(&file_in,false);
             }
+
+            file_in.close();
         }
     }
     else
@@ -86,6 +88,8 @@ void MainWindow::InsertSaves()
                     return;
             InsertBinarySave(&file_in,true);
         }
+
+        file_in.close();
     }
 
     //ui->statusBar->showMessage(tr("Save from file %1 inserted").arg(fileName));
@@ -548,13 +552,10 @@ void MainWindow::InsertBUPSave(QFile *file_in, bool bSingle)
     QList<QByteArray> SysHeadersList;
     QByteArray SysHeader1st;
     SaveType tmpSave;
-    int iOldClusterSize;
     TheConfig->LoadFromRegistry();
     SysHeadersList.clear();
     SysHeader1st.clear();
-    bool bOverwriteDupes = false;
-    bool bFirstDupeFound = false;
-    int iOldSATSize,iNewSATSize;
+    int iNewSATSize;
     QString fileName = file_in->fileName();
 
     //file opened, move on

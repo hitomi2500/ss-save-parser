@@ -79,7 +79,11 @@ private:
     void InsertBUPSave(QFile *file_in, bool bSingle);
     void InsertXMLSave(QFile *file_in, bool bSingle);
     bool GlobalBinaryInsertChecks();
-
+    void ExtractSaves(int iStart,int iEnd);
+    void ExtractBinarySave(QFile *file_in, bool bSingle);
+    void ExtractBUPSave(QFile *file_in, bool bSingle);
+    void ExtractXMLSave(QFile *file_in, bool bSingle);
+    bool GlobalBinaryExtractChecks();
 };
 
 #endif // MAINWINDOW_H

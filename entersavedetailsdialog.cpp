@@ -21,6 +21,7 @@ EnterSaveDetailsDialog::EnterSaveDetailsDialog(SaveType *save, QWidget *parent) 
     wsave=save;
     this->setWindowTitle(this->windowTitle().append(" ").append(APP_VERSION));
     ui->OptionalBox->setFlat(true);
+    ui->pushButton->setEnabled(false);
 }
 
 EnterSaveDetailsDialog::~EnterSaveDetailsDialog()
