@@ -74,7 +74,7 @@ QByteArray GetSSF4ByteFromDateTime(QDateTime dt)
 ParseResult ParseHeader(QByteArray buf, SaveType *save)
 {
 if (buf.size() < 34 ) return DataTooShort;
-if (buf.at(0)!=(char)0x80) return NotAHeader;
+if ((buf.at(0) & 0x80) == 0) return NotAHeader;
 save->cCounter = (unsigned char)buf.at(3);
 save->Name = buf.mid(4,11);
 save->cLanguageCode = (unsigned char)buf.at(15);
