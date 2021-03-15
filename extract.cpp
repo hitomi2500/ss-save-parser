@@ -45,15 +45,15 @@ void MainWindow::ExtractSaves(int iStart,int iEnd)
 
         //extract single save
         if(fileName.toUpper().endsWith(".BUP")) {
-            ExtractBUPSave(&file_out,true);
+            ExtractBUPSave(&file_out,tmpSave,true);
         }
         else if (fileName.toUpper().endsWith(".XML")) {
-            ExtractXMLSave(&file_out,true);
+            ExtractXMLSave(&file_out,tmpSave,true);
         }
         else {
             if (false == GlobalBinaryExtractChecks())
                     return;
-            ExtractBinarySave(&file_out,true);
+            ExtractBinarySave(&file_out,tmpSave,true);
         }
         file_out.close();
     }
@@ -80,7 +80,7 @@ void MainWindow::ExtractSaves(int iStart,int iEnd)
                 msgBox.exec();
                 return;
             }
-            ExtractBinarySave(&file_out,false);
+            ExtractBinarySave(&file_out,tmpSave,false);
             file_out.close();
         }
     }
@@ -120,11 +120,10 @@ bool MainWindow::GlobalBinaryExtractChecks()
     return true;
 }
 
-void MainWindow::ExtractBinarySave(QFile *file_out, bool bSingle)
+void MainWindow::ExtractBinarySave(QFile *file_out, SaveType Save, bool bSingle)
 {
     //extract save from image
     char buf[256];
-    SaveType tmpSave;
     QString fileName;
     QString folderName;
     TheConfig->LoadFromRegistry();
@@ -142,7 +141,7 @@ void MainWindow::ExtractBinarySave(QFile *file_out, bool bSingle)
         SetupWinExtract->SetupConfig->m_bAskFormatAtEveryExtract = true;
         SetupWinExtract->SetupConfig->UpdateFlags();
         SetupWinExtract->UpdateFromConfig();
-        SetupWinExtract->SetExtractInsertFilename(QString(tmpSave.Name));
+        SetupWinExtract->SetExtractInsertFilename(QString(Save.Name));
         //opening format window as modal
         if (SetupWinExtract->exec() == QDialog::Rejected) return;
         //getting temporal config from it
@@ -161,31 +160,31 @@ void MainWindow::ExtractBinarySave(QFile *file_out, bool bSingle)
         }
         else
         {
-            buf[0] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize];
-            buf[1] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+1];
-            buf[2] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+2];
-            buf[3] = HugeRAM[tmpSave.iStartCluster*TheConfig->m_iClusterSize+3];
+            buf[0] = HugeRAM[Save.iStartCluster*TheConfig->m_iClusterSize];
+            buf[1] = HugeRAM[Save.iStartCluster*TheConfig->m_iClusterSize+1];
+            buf[2] = HugeRAM[Save.iStartCluster*TheConfig->m_iClusterSize+2];
+            buf[3] = HugeRAM[Save.iStartCluster*TheConfig->m_iClusterSize+3];
         }
         file_out->write(buf,4);
     }
     if (TheConfig->m_bExtractName)
     {
-        file_out->write(tmpSave.Name,11);
+        file_out->write(Save.Name,11);
     }
     if (TheConfig->m_bExtractLanguage)
     {
-        buf[0]=(char)tmpSave.cLanguageCode;
+        buf[0]=(char)Save.cLanguageCode;
         file_out->write(buf,1);
     }
     if (TheConfig->m_bExtractDescription)
     {
-        file_out->write(tmpSave.Comment,10);
+        file_out->write(Save.Comment,10);
     }
     //SSF specific - add zero and language code after description
     if (TheConfig->m_ExtractMode == ExtractSSF)
     {
         buf[0]=(char)0;
-        buf[1]=(char)tmpSave.cLanguageCode;
+        buf[1]=(char)Save.cLanguageCode;
         file_out->write(buf,2);
     }
     if (TheConfig->m_bExtractDateTime)
@@ -193,20 +192,20 @@ void MainWindow::ExtractBinarySave(QFile *file_out, bool bSingle)
         //SSF specific date/time
         if (TheConfig->m_ExtractMode == ExtractSSF)
         {
-            tmpSave.DateTimeRaw = GetSSF4ByteFromDateTime(tmpSave.DateTime);
-            file_out->write(tmpSave.DateTimeRaw,4);
+            Save.DateTimeRaw = GetSSF4ByteFromDateTime(Save.DateTime);
+            file_out->write(Save.DateTimeRaw,4);
         }
         else
         {
-            file_out->write(tmpSave.DateTimeRaw,4);
+            file_out->write(Save.DateTimeRaw,4);
         }
     }
     if (TheConfig->m_bExtractSize)
     {
-        buf[0]=(unsigned char)(tmpSave.iBytes/0x1000000);
-        buf[1]=(unsigned char)(tmpSave.iBytes/0x10000);
-        buf[2]=(unsigned char)(tmpSave.iBytes/0x100);
-        buf[3]=(unsigned char)(tmpSave.iBytes);
+        buf[0]=(unsigned char)(Save.iBytes/0x1000000);
+        buf[1]=(unsigned char)(Save.iBytes/0x10000);
+        buf[2]=(unsigned char)(Save.iBytes/0x100);
+        buf[3]=(unsigned char)(Save.iBytes);
         file_out->write(buf,4);
     }
     //Druid II specific - add 2 zeroes after header
@@ -217,28 +216,28 @@ void MainWindow::ExtractBinarySave(QFile *file_out, bool bSingle)
         file_out->write(buf,2);
     }
     //write 1st cluster
-    int iSATnDataSize = tmpSave.SAT.size()*2 + tmpSave.iBytes;
+    int iSATnDataSize = Save.SAT.size()*2 + Save.iBytes;
     if ((iSATnDataSize + 34 ) < TheConfig->m_iClusterSize )
     {
         //writing single cluster
         if (TheConfig->m_bExtractSAT)
-            file_out->write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34,tmpSave.SAT.size()*2),tmpSave.SAT.size()*2);
-        file_out->write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34+tmpSave.SAT.size()*2,tmpSave.iBytes),tmpSave.iBytes);
+            file_out->write(HugeRAM.mid(Save.iStartCluster*TheConfig->m_iClusterSize+34,Save.SAT.size()*2),Save.SAT.size()*2);
+        file_out->write(HugeRAM.mid(Save.iStartCluster*TheConfig->m_iClusterSize+34+Save.SAT.size()*2,Save.iBytes),Save.iBytes);
     }
     else
     {
         //writing first cluster
         if (TheConfig->m_bExtractSAT) //if saving SAT
-            file_out->write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34,TheConfig->m_iClusterSize),TheConfig->m_iClusterSize-34);
+            file_out->write(HugeRAM.mid(Save.iStartCluster*TheConfig->m_iClusterSize+34,TheConfig->m_iClusterSize),TheConfig->m_iClusterSize-34);
         else //not saving SAT
-            if (34+tmpSave.SAT.size()*2 < TheConfig->m_iClusterSize) //if sat uses first cluster, but not fully
-                file_out->write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34+tmpSave.SAT.size()*2,TheConfig->m_iClusterSize),
-                               TheConfig->m_iClusterSize-34-(tmpSave.SAT.size()*2));
+            if (34+Save.SAT.size()*2 < TheConfig->m_iClusterSize) //if sat uses first cluster, but not fully
+                file_out->write(HugeRAM.mid(Save.iStartCluster*TheConfig->m_iClusterSize+34+Save.SAT.size()*2,TheConfig->m_iClusterSize),
+                               TheConfig->m_iClusterSize-34-(Save.SAT.size()*2));
 
     }
     //now remaining clusters
-    int iRemainingBytes = tmpSave.SAT.size()*2+tmpSave.iBytes + 34 - TheConfig->m_iClusterSize;
-    for (int i=0;i<tmpSave.SAT.size()-1;i++)
+    int iRemainingBytes = Save.SAT.size()*2+Save.iBytes + 34 - TheConfig->m_iClusterSize;
+    for (int i=0;i<Save.SAT.size()-1;i++)
     {
         if ( iRemainingBytes > (TheConfig->m_iClusterSize-4)) //not counting headers
         {
@@ -258,31 +257,31 @@ void MainWindow::ExtractBinarySave(QFile *file_out, bool bSingle)
                     buf[0]=(char)0;
                     buf[1]=(char)0;
                     buf[2]=(char)0;
-                    buf[3]=tmpSave.cCounter;
+                    buf[3]=Save.cCounter;
                 }
                 file_out->write(buf,4);
             }
             //three cases here: full sat cluster, ful data cluster, sat with data in the end
             //detecting
-            if ((iRemainingBytes - tmpSave.iBytes) >= (TheConfig->m_iClusterSize-4) )
+            if ((iRemainingBytes - Save.iBytes) >= (TheConfig->m_iClusterSize-4) )
             {
                 //full SAT cluster
                 if (TheConfig->m_bExtractSAT)
-                    file_out->write(HugeRAM.mid(tmpSave.SAT.at(i)*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
+                    file_out->write(HugeRAM.mid(Save.SAT.at(i)*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
             }
-            else if (iRemainingBytes <= tmpSave.iBytes)
+            else if (iRemainingBytes <= Save.iBytes)
             {
                 //full data cluster
-                file_out->write(HugeRAM.mid(tmpSave.SAT.at(i)*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
+                file_out->write(HugeRAM.mid(Save.SAT.at(i)*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
             }
             else
             {
-                int iRemainingSAT = iRemainingBytes - tmpSave.iBytes;
+                int iRemainingSAT = iRemainingBytes - Save.iBytes;
                 //SAT with data in the end
                 if (TheConfig->m_bExtractSAT) //write as is
-                    file_out->write(HugeRAM.mid(tmpSave.SAT.at(i)*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
+                    file_out->write(HugeRAM.mid(Save.SAT.at(i)*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
                 else  //only write data part
-                    file_out->write(HugeRAM.mid(tmpSave.SAT.at(i)*TheConfig->m_iClusterSize+4+iRemainingSAT,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4-iRemainingSAT);
+                    file_out->write(HugeRAM.mid(Save.SAT.at(i)*TheConfig->m_iClusterSize+4+iRemainingSAT,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4-iRemainingSAT);
             }
             iRemainingBytes -= TheConfig->m_iClusterSize;
             iRemainingBytes +=4;
@@ -308,21 +307,20 @@ void MainWindow::ExtractBinarySave(QFile *file_out, bool bSingle)
                     buf[0]=(char)0;
                     buf[1]=(char)0;
                     buf[2]=(char)0;
-                    buf[3]=tmpSave.cCounter;
+                    buf[3]=Save.cCounter;
                 }
                 file_out->write(buf,4);
             }
-            file_out->write(HugeRAM.mid((tmpSave.SAT.at(i)*TheConfig->m_iClusterSize)+4,iRemainingBytes),iRemainingBytes);
+            file_out->write(HugeRAM.mid((Save.SAT.at(i)*TheConfig->m_iClusterSize)+4,iRemainingBytes),iRemainingBytes);
             iRemainingBytes = 0;
         }
     }
 }
 
-void MainWindow::ExtractBUPSave(QFile *file_out, bool bSingle)
+void MainWindow::ExtractBUPSave(QFile *file_out, SaveType Save, bool bSingle)
 {
     //extract save from image
     char buf[256];
-    SaveType tmpSave;
     QString fileName;
     QString folderName;
     TheConfig->LoadFromRegistry();
@@ -334,77 +332,77 @@ void MainWindow::ExtractBUPSave(QFile *file_out, bool bSingle)
     file_out->write("Vmem");
     //unknown up to 16
     for (int i=0;i<12;i++)
-        file_out->write("\0");
+        file_out->write("\0",1);
     iWritten+=16;
 
-    file_out->write(tmpSave.Name,11);
+    file_out->write(Save.Name,11);
     iWritten+=11;
 
-    buf[0]=(char)tmpSave.cLanguageCode;
+    buf[0]=(char)Save.cLanguageCode;
     file_out->write(buf,1);
     iWritten+=1;
 
-    file_out->write(tmpSave.Comment,10);
+    file_out->write(Save.Comment,10);
     iWritten+=10;
 
     //skipping 2 unknown bytes for BUP
     for (int i=0;i<2;i++)
-        file_out->write("\0");
+        file_out->write("\0",1);
     iWritten+=2;
 
-    file_out->write(tmpSave.DateTimeRaw,4);
+    file_out->write(Save.DateTimeRaw,4);
     iWritten+=4;
 
-    buf[0]=(unsigned char)(tmpSave.iBytes/0x1000000);
-    buf[1]=(unsigned char)(tmpSave.iBytes/0x10000);
-    buf[2]=(unsigned char)(tmpSave.iBytes/0x100);
-    buf[3]=(unsigned char)(tmpSave.iBytes);
+    buf[0]=(unsigned char)(Save.iBytes/0x1000000);
+    buf[1]=(unsigned char)(Save.iBytes/0x10000);
+    buf[2]=(unsigned char)(Save.iBytes/0x100);
+    buf[3]=(unsigned char)(Save.iBytes);
     file_out->write(buf,4);
     iWritten+=4;
 
     while(iWritten<64)
     {
-        file_out->write("\0");//skipping to data
+        file_out->write("\0",1);//skipping to data
         iWritten++;
     }
 
     //write 1st cluster
-    int iSATnDataSize = tmpSave.SAT.size()*2 + tmpSave.iBytes;
+    int iSATnDataSize = Save.SAT.size()*2 + Save.iBytes;
     if ((iSATnDataSize + 34 ) < TheConfig->m_iClusterSize )
     {
         //writing single cluster
-        file_out->write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34+tmpSave.SAT.size()*2,tmpSave.iBytes),tmpSave.iBytes);
+        file_out->write(HugeRAM.mid(Save.iStartCluster*TheConfig->m_iClusterSize+34+Save.SAT.size()*2,Save.iBytes),Save.iBytes);
     }
     else
     {
         //writing first cluster
-        if (34+tmpSave.SAT.size()*2 < TheConfig->m_iClusterSize) //if sat uses first cluster, but not fully
-            file_out->write(HugeRAM.mid(tmpSave.iStartCluster*TheConfig->m_iClusterSize+34+tmpSave.SAT.size()*2,TheConfig->m_iClusterSize),
-                           TheConfig->m_iClusterSize-34-(tmpSave.SAT.size()*2));
+        if (34+Save.SAT.size()*2 < TheConfig->m_iClusterSize) //if sat uses first cluster, but not fully
+            file_out->write(HugeRAM.mid(Save.iStartCluster*TheConfig->m_iClusterSize+34+Save.SAT.size()*2,TheConfig->m_iClusterSize),
+                           TheConfig->m_iClusterSize-34-(Save.SAT.size()*2));
 
     }
     //now remaining clusters
-    int iRemainingBytes = tmpSave.SAT.size()*2+tmpSave.iBytes + 34 - TheConfig->m_iClusterSize;
-    for (int i=0;i<tmpSave.SAT.size()-1;i++)
+    int iRemainingBytes = Save.SAT.size()*2+Save.iBytes + 34 - TheConfig->m_iClusterSize;
+    for (int i=0;i<Save.SAT.size()-1;i++)
     {
         if ( iRemainingBytes > (TheConfig->m_iClusterSize-4)) //not counting headers
         {
             //three cases here: full sat cluster, ful data cluster, sat with data in the end
             //detecting
-            if ((iRemainingBytes - tmpSave.iBytes) >= (TheConfig->m_iClusterSize-4) )
+            if ((iRemainingBytes - Save.iBytes) >= (TheConfig->m_iClusterSize-4) )
             {
                 //full SAT cluster
             }
-            else if (iRemainingBytes <= tmpSave.iBytes)
+            else if (iRemainingBytes <= Save.iBytes)
             {
                 //full data cluster
-                file_out->write(HugeRAM.mid(tmpSave.SAT.at(i)*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
+                file_out->write(HugeRAM.mid(Save.SAT.at(i)*TheConfig->m_iClusterSize+4,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4);
             }
             else
             {
-                int iRemainingSAT = iRemainingBytes - tmpSave.iBytes;
+                int iRemainingSAT = iRemainingBytes - Save.iBytes;
                 //only write data part
-                file_out->write(HugeRAM.mid(tmpSave.SAT.at(i)*TheConfig->m_iClusterSize+4+iRemainingSAT,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4-iRemainingSAT);
+                file_out->write(HugeRAM.mid(Save.SAT.at(i)*TheConfig->m_iClusterSize+4+iRemainingSAT,TheConfig->m_iClusterSize-4),TheConfig->m_iClusterSize-4-iRemainingSAT);
             }
             iRemainingBytes -= TheConfig->m_iClusterSize;
             iRemainingBytes +=4;
@@ -415,16 +413,14 @@ void MainWindow::ExtractBUPSave(QFile *file_out, bool bSingle)
             //last cluster here is definitely NOT SAT, so no SAT checks here
             // (this last cluster case is not used when save is only 1 cluster,
             //  only when save is 2 or more clusters, so don't worry)
-            file_out->write(HugeRAM.mid((tmpSave.SAT.at(i)*TheConfig->m_iClusterSize)+4,iRemainingBytes),iRemainingBytes);
+            file_out->write(HugeRAM.mid((Save.SAT.at(i)*TheConfig->m_iClusterSize)+4,iRemainingBytes),iRemainingBytes);
             iRemainingBytes = 0;
         }
     }
 }
 
-void MainWindow::ExtractXMLSave(QFile *file_out, bool bSingle)
+void MainWindow::ExtractXMLSave(QFile *file_out, SaveType Save, bool bSingle)
 {
-    SaveType tmpSave;
-
     //XML extraction is similar to binary with some exceptions:
     // 1) all extract flags are ignored, everything is extracted except SAT and 2..n headers
     // 2) some additional data fields are added, like player's name, comment, source etc.
@@ -439,7 +435,7 @@ void MainWindow::ExtractXMLSave(QFile *file_out, bool bSingle)
     int iCurrentCluster = -1;
     int iCurrentPos = 34;
     //skipping SAT first
-    for (int i=0;i<tmpSave.SAT.size()*2;i++)
+    for (int i=0;i<Save.SAT.size()*2;i++)
     {
         if (iCurrentPos == TheConfig->m_iClusterSize-1)
         {
@@ -450,12 +446,12 @@ void MainWindow::ExtractXMLSave(QFile *file_out, bool bSingle)
             iCurrentPos++;
     }
     //now copying data
-    for (int i=0;i<tmpSave.iBytes;i++)
+    for (int i=0;i<Save.iBytes;i++)
     {
         if (-1 == iCurrentCluster)
-            tmpdata.append(HugeRAM.at(tmpSave.iStartCluster*TheConfig->m_iClusterSize+iCurrentPos));
+            tmpdata.append(HugeRAM.at(Save.iStartCluster*TheConfig->m_iClusterSize+iCurrentPos));
         else
-            tmpdata.append(HugeRAM.at(tmpSave.SAT.at(iCurrentCluster)*TheConfig->m_iClusterSize+iCurrentPos));
+            tmpdata.append(HugeRAM.at(Save.SAT.at(iCurrentCluster)*TheConfig->m_iClusterSize+iCurrentPos));
 
         if (iCurrentPos == TheConfig->m_iClusterSize-1)
         {
@@ -473,35 +469,35 @@ void MainWindow::ExtractXMLSave(QFile *file_out, bool bSingle)
     xml_write.writeStartElement(QString("Sega_Saturn_Save"));
     xml_write.writeStartElement(QString("mandatory"));
     xml_write.writeStartElement("counter");
-    xml_write.writeCharacters(QString("%1").arg(tmpSave.cCounter));
+    xml_write.writeCharacters(QString("%1").arg(Save.cCounter));
     xml_write.writeEndElement();//counter
     xml_write.writeStartElement("name");
-    xml_write.writeCharacters(QString(tmpSave.Name));
+    xml_write.writeCharacters(QString(Save.Name));
     xml_write.writeEndElement();//name
     xml_write.writeStartElement("name_binary");
-    xml_write.writeCharacters(QString(tmpSave.Name.toBase64()));
+    xml_write.writeCharacters(QString(Save.Name.toBase64()));
     xml_write.writeEndElement();//name_binary
     xml_write.writeStartElement("comment");
-    xml_write.writeCharacters(QString(tmpSave.Comment));
+    xml_write.writeCharacters(QString(Save.Comment));
     xml_write.writeEndElement();//name_binary
     xml_write.writeStartElement("comment_binary");
-    xml_write.writeCharacters(QString(tmpSave.Comment.toBase64()));
+    xml_write.writeCharacters(QString(Save.Comment.toBase64()));
     xml_write.writeEndElement();//comment
     xml_write.writeStartElement("language_code");
-    xml_write.writeCharacters(QString("%1").arg(tmpSave.cLanguageCode));
+    xml_write.writeCharacters(QString("%1").arg(Save.cLanguageCode));
     xml_write.writeEndElement();//language_code
     xml_write.writeStartElement("size");
-    xml_write.writeCharacters(QString("%1").arg(tmpSave.iBytes));
+    xml_write.writeCharacters(QString("%1").arg(Save.iBytes));
     xml_write.writeEndElement();//size
     xml_write.writeStartElement(QString("date"));
-    xml_write.writeAttribute("year",QString("%1").arg(tmpSave.DateTime.date().year()));
-    xml_write.writeAttribute("month",QString("%1").arg(tmpSave.DateTime.date().month()))        ;
-    xml_write.writeAttribute("day",QString("%1").arg(tmpSave.DateTime.date().day()));
+    xml_write.writeAttribute("year",QString("%1").arg(Save.DateTime.date().year()));
+    xml_write.writeAttribute("month",QString("%1").arg(Save.DateTime.date().month()));
+    xml_write.writeAttribute("day",QString("%1").arg(Save.DateTime.date().day()));
     xml_write.writeEndElement();//date
     xml_write.writeStartElement(QString("time"));
-    xml_write.writeAttribute("hour",QString("%1").arg(tmpSave.DateTime.time().hour()));
-    xml_write.writeAttribute("minute",QString("%1").arg(tmpSave.DateTime.time().minute()))        ;
-    xml_write.writeAttribute("second",QString("%1").arg(tmpSave.DateTime.time().second()));
+    xml_write.writeAttribute("hour",QString("%1").arg(Save.DateTime.time().hour()));
+    xml_write.writeAttribute("minute",QString("%1").arg(Save.DateTime.time().minute()));
+    xml_write.writeAttribute("second",QString("%1").arg(Save.DateTime.time().second()));
     xml_write.writeEndElement();//time
     xml_write.writeStartElement("data");
     xml_write.writeCharacters(QString(tmpdata.toBase64()));

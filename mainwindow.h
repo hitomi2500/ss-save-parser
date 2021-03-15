@@ -80,9 +80,9 @@ private:
     void InsertXMLSave(QFile *file_in, bool bSingle);
     bool GlobalBinaryInsertChecks();
     void ExtractSaves(int iStart,int iEnd);
-    void ExtractBinarySave(QFile *file_in, bool bSingle);
-    void ExtractBUPSave(QFile *file_in, bool bSingle);
-    void ExtractXMLSave(QFile *file_in, bool bSingle);
+    void ExtractBinarySave(QFile *file_in, SaveType Save, bool bSingle);
+    void ExtractBUPSave(QFile *file_in, SaveType Save, bool bSingle);
+    void ExtractXMLSave(QFile *file_in, SaveType Save, bool bSingle);
     bool GlobalBinaryExtractChecks();
 };
 
