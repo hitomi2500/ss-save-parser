@@ -19,8 +19,8 @@ void MainWindow::ExtractSaves(int iStart,int iEnd)
     //we should ask for a filenames first, to find the format
     //there are two special formats, BUP and XML, they imply different sanity checks, so the checks come after file selection
     //for a "binary" (i.e. normal) saves, some sanity checks should be done once per insert and some once per file
-    QStringList fileNames = QFileDialog::getOpenFileNames(this,tr("Load Savegame"), "", NULL);
-    if (fileNames.isEmpty()) return; //return if user cancel
+    //QStringList fileNames = QFileDialog::getOpenFileNames(this,tr("Load Savegame"), "", NULL);
+    //if (fileNames.isEmpty()) return; //return if user cancel
     //cycle through each save
     QString fileName;
     SaveType tmpSave;
@@ -326,6 +326,7 @@ void MainWindow::ExtractBUPSave(QFile *file_out, bool bSingle)
     QString fileName;
     QString folderName;
     TheConfig->LoadFromRegistry();
+    int iWritten = 0;
 
     //file/folder opened, move on
 
@@ -334,27 +335,38 @@ void MainWindow::ExtractBUPSave(QFile *file_out, bool bSingle)
     //unknown up to 16
     for (int i=0;i<12;i++)
         file_out->write("\0");
+    iWritten+=16;
 
     file_out->write(tmpSave.Name,11);
+    iWritten+=11;
 
     buf[0]=(char)tmpSave.cLanguageCode;
     file_out->write(buf,1);
+    iWritten+=1;
 
     file_out->write(tmpSave.Comment,10);
+    iWritten+=10;
 
     //skipping 2 unknown bytes for BUP
     for (int i=0;i<2;i++)
         file_out->write("\0");
+    iWritten+=2;
 
     file_out->write(tmpSave.DateTimeRaw,4);
+    iWritten+=4;
 
     buf[0]=(unsigned char)(tmpSave.iBytes/0x1000000);
     buf[1]=(unsigned char)(tmpSave.iBytes/0x10000);
     buf[2]=(unsigned char)(tmpSave.iBytes/0x100);
     buf[3]=(unsigned char)(tmpSave.iBytes);
     file_out->write(buf,4);
+    iWritten+=4;
 
-    file_out->seek(64);//skipping to data
+    while(iWritten<64)
+    {
+        file_out->write("\0");//skipping to data
+        iWritten++;
+    }
 
     //write 1st cluster
     int iSATnDataSize = tmpSave.SAT.size()*2 + tmpSave.iBytes;
