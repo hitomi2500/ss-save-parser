@@ -67,7 +67,7 @@ void MainWindow::ExtractSaves(int iStart,int iEnd)
         else return; //return if user cancel
 
         //do a multiple extract - BUP and XML are not supported yet, so binary only
-        for (int i=iStart; i<iEnd; i++)
+        for (int i=iStart; i<=iEnd; i++)
         {
             //if multiple saves load every file now
             tmpSave = SavesList.at(i);
